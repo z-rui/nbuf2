@@ -1,0 +1,51 @@
+NBUFC=../bin/nbufc
+CC=gcc
+CXX=g++
+CFLAGS=-fPIC -Wall -g -I../include -O2 
+CXXFLAGS=$(CFLAGS)
+LDFLAGS=-L../lib
+LIBS=../lib/libnbuf.a
+
+TARGETS=benchmark
+TARGETS+=benchmark_pb  # Protocol Buffers
+TARGETS+=benchmark_fb  # Flatbuffers
+TARGETS+=benchmark_cp  # Cap'n Proto
+
+all: $(TARGETS)
+
+clean:
+	rm -f *.o *.nb.c *.nb.h *.pb.cc *.pb.h *.capnp.c++ *.capnp.h *_generated.h
+
+benchmark: benchmark.o benchmark.nb.o
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+benchmark.o: benchmark.c benchmark.nb.h
+
+%.nb.h %.nb.c: %.nbuf
+	$(NBUFC) -c_out $<
+
+benchmark_pb: benchmark_pb.o benchmark.pb.o
+	$(CXX) $(LDFLAGS) -o $@ $^ -lprotobuf
+
+benchmark_pb.o: benchmark_pb.cc benchmark.pb.h
+
+%.pb.h %.pb.cc: %.proto
+	protoc --cpp_out=. $<
+
+benchmark_fb: benchmark_fb.o
+	$(CXX) $(LDFLAGS) -o $@ $^ -lflatbuffers
+
+benchmark_fb.o: benchmark_fb.cc benchmark_generated.h
+
+%_generated.h: %.fbs
+	flatc --cpp $<
+
+benchmark_cp: benchmark_cp.o benchmark.capnp.o
+	$(CXX) $(LDFLAGS) -o $@ $^ -lcapnp -lcapnpc
+
+benchmark.capnp.o: benchmark.capnp.c++ benchmark.capnp.h
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+%.capnp.h %.capnp.c++: %.capnp
+	capnp compile -oc++ $<
+

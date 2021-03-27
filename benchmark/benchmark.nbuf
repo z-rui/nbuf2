@@ -1,0 +1,11 @@
+message Root {
+	Entry[] entries;
+}
+
+message Entry {
+	uint64 magic;
+	int32 id;
+	double pi;
+	float[] coordinates;
+	string msg;
+}

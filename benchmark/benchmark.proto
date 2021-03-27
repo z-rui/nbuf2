@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message Root {
+	repeated Entry entries = 1;
+}
+
+message Entry {
+	uint64 magic = 1;
+	int32 id = 2;
+	double pi = 3;
+	repeated float coordinates = 4;
+	string msg = 5;
+}

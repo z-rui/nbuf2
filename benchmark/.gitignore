@@ -1,0 +1,15 @@
+# generated files
+*.nb.[ch]
+*.pb.cc
+*.pb.h
+*.capnp.c++
+*.capnp.h
+*_generated.h  # flatbuffers generated header
+*.nb.txt
+*.pb.txt
+*.capnp.txt
+*_fb.json
+*.bin
+*.gcda
+perf.data
+perf.data.old

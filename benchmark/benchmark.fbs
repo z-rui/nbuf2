@@ -1,0 +1,13 @@
+table Root {
+	entries: [Entry];
+}
+
+table Entry {
+	magic: ulong;
+	id: int;
+	pi: double;
+	coordinates: [float];
+	msg: string;
+}
+
+root_type Root;
