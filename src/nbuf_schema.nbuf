@@ -1,0 +1,45 @@
+package nbuf;
+
+enum Kind {
+	VOID = 0,  // not valid
+	BOOL = 1,
+	ENUM = 2,
+	UINT = 3,
+	SINT = 4,
+	FLT = 5,
+	MSG = 6,
+	STR = 7,
+	ARR = 8,
+}
+
+message Schema {
+	string pkg_name;
+	string src_name;
+	EnumDef[] enums;
+	MsgDef[] messages;
+}
+
+message EnumDef {
+	string name;
+	EnumVal[] values;
+}
+
+message EnumVal {
+	string symbol;
+	uint16 value;
+}
+
+message MsgDef {
+	string name;
+	FieldDef[] fields;
+	uint16 ssize;
+	uint16 psize;
+}
+
+message FieldDef {
+	string name;
+	Kind kind;
+	uint16 import_id;
+	uint16 type_id;
+	uint16 offset;
+}
