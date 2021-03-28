@@ -1,0 +1,6 @@
+import "logging.nbuf";
+import "datetime.nbuf";  // just to test duplicate import works
+
+message LogFile {
+	logging.LogEntry[] log_entry;
+}

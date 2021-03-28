@@ -1,0 +1,19 @@
+package logging;
+
+import "datetime.nbuf";
+
+enum LogSeverity {
+	DEBUG = 100,
+	INFO = 200,
+	NOTICE = 300,
+	WARNING = 400,
+	ERROR = 500,
+	CRITICAL = 600,
+	FATAL = 700,
+}
+
+message LogEntry {
+	datetime.Timestamp timestamp;
+	LogSeverity severity;
+	string message;
+}

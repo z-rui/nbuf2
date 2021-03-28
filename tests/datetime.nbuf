@@ -1,0 +1,6 @@
+package datetime;
+
+message Timestamp {
+	uint32 seconds;
+	uint32 nanoseconds;
+}

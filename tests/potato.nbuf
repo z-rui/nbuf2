@@ -1,0 +1,4 @@
+message Potato {
+	int32 ttl;
+	uint16[] trace;
+}
