@@ -1,10 +1,7 @@
 NBUFC=../bin/nbufc
-CC=gcc
-CXX=g++
 CFLAGS=-fPIC -Wall -g -I../include -O2 
 CXXFLAGS=$(CFLAGS)
-LDFLAGS=-L../lib
-LIBS=../lib/libnbuf.a
+LDFLAGS=$(SYS_LDFLAGS)
 
 TARGETS=benchmark
 TARGETS+=benchmark_pb  # Protocol Buffers
@@ -17,7 +14,7 @@ clean:
 	rm -f *.o *.nb.c *.nb.h *.pb.cc *.pb.h *.capnp.c++ *.capnp.h *_generated.h
 
 benchmark: benchmark.o benchmark.nb.o
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ -lnbuf
 
 benchmark.o: benchmark.c benchmark.nb.h
 

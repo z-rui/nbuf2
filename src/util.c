@@ -10,8 +10,14 @@
 # include <sys/types.h>
 # include <sys/stat.h>
 # include <unistd.h>
+#elif defined _WIN32
+# include <io.h>
+# include <sys/types.h>
+# include <sys/stat.h>
 #endif
 
+
+#if _POSIX_C_SOURCE || defined _WIN32
 static size_t nbuf_load_fd_read(struct nbuf *buf, int fd)
 {
 	size_t readsz;
@@ -22,7 +28,11 @@ static size_t nbuf_load_fd_read(struct nbuf *buf, int fd)
 			goto err;
 		buf->len -= BUFSIZ;
 		readsz = buf->cap - buf->len;
+#ifdef _WIN32
+		n = _read(fd, buf->base + buf->len, readsz);
+#else
 		n = read(fd, buf->base + buf->len, readsz);
+#endif
 		if (n == -1) {
 			perror("read");
 			goto err;
@@ -34,20 +44,33 @@ err:
 	nbuf_clear(buf);
 	return 0;
 }
+#endif
 
-#if _POSIX_C_SOURCE
+#if _POSIX_C_SOURCE || defined _WIN32
 size_t nbuf_load_fd(struct nbuf *buf, int fd)
 {
+#ifdef _WIN32
+	struct _stat statbuf;
+	if (_fstat(fd, &statbuf) == -1) {
+		perror("_fstat");
+		return 0;
+	}
+#else
 	struct stat statbuf;
-
 	if (fstat(fd, &statbuf) == -1) {
 		perror("fstat");
 		return 0;
 	}
+#endif
+
 	buf->base = NULL;
 	buf->len = statbuf.st_size;
 	buf->cap = 0;
-#if _POSIX_MAPPED_FILES && !defined __SANITIZE_ADDRESS__
+#ifndef __SANITIZE_ADDRESS__
+	/* Will not ues mmap if using sanitizers,
+	 * so memory leak will be detected.
+	 */
+#if _POSIX_MAPPED_FILES
 	if (buf->len && S_ISREG(statbuf.st_mode)) {
 		buf->base = mmap(NULL, buf->len, PROT_READ, MAP_SHARED, fd, 0);
 		if (buf->base == MAP_FAILED) {
@@ -57,8 +80,10 @@ size_t nbuf_load_fd(struct nbuf *buf, int fd)
 		}
 		return buf->len;
 	}
-	return nbuf_load_fd_read(buf, fd);
 #endif
+#endif  /* __SANITIZE_ADDRESS__ */
+	buf->len = 0;
+	return nbuf_load_fd_read(buf, fd);
 }
 #endif
 
@@ -66,6 +91,8 @@ size_t nbuf_load_fp(struct nbuf *buf, FILE *f)
 {
 #if _POSIX_C_SOURCE
 	return nbuf_load_fd(buf, fileno(f));
+#elif defined _WIN32
+	return nbuf_load_fd(buf, _fileno(f));
 #else
 	int ch;
 
@@ -74,13 +101,13 @@ size_t nbuf_load_fp(struct nbuf *buf, FILE *f)
 		if (!nbuf_add1(buf, ch))
 			goto err;
 	if (ferror(f)) {
-		perror(filename);
+		perror("nbuf_load_fp");
 err:
 		nbuf_clear(buf);
-		return 1;
+		return 0;
 	}
 #endif
-	return 0;
+	return buf->len;
 }
 
 size_t nbuf_load_file(struct nbuf *buf, const char *filename)
@@ -112,6 +139,7 @@ void nbuf_unload_file(struct nbuf *buf)
 	buf->len = buf->cap = 0;
 }
 
+#if _POSIX_C_SOURCE || defined _WIN32
 size_t nbuf_save_fd(struct nbuf *buf, int fd)
 {
 	if (write(fd, buf->base, buf->len) != buf->len) {
@@ -120,6 +148,7 @@ size_t nbuf_save_fd(struct nbuf *buf, int fd)
 	}
 	return buf->len;
 }
+#endif
 
 size_t nbuf_save_fp(struct nbuf *buf, FILE *f)
 {

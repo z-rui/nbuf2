@@ -9,15 +9,7 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
 
-#define BENCH(expr, n) do { \
-	clock_t start = std::clock(), stop; \
-	for (int i = 0; i < n; i++) expr; \
-	stop = std::clock(); \
-	std::fprintf(stderr, "%s: %.fns/op\n", #expr, \
-		(double) (stop - start) / (n) / CLOCKS_PER_SEC * 1e9); \
-} while (0)
-
-#define MAX_ENTRY 100
+#include "common.h"
 
 static void create(Root *root)
 {
@@ -99,7 +91,7 @@ int main()
 	BENCH(deserialize(&root, buf), 100000);
 	BENCH(use(root), 100000);
 	{
-		std::fstream f("/dev/null", std::ios::out | std::ios::binary);
+		std::fstream f(NUL_FILE, std::ios::out | std::ios::binary);
 		google::protobuf::io::OstreamOutputStream s(&f);
 		BENCH(print_text_format(&s, root), 2000);
 	}

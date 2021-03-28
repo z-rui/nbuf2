@@ -10,15 +10,7 @@
 #include <capnp/serialize.h>
 #include <capnp/serialize-text.h>
 
-#define BENCH(expr, n) do { \
-	clock_t start = std::clock(), stop; \
-	for (int i = 0; i < n; i++) expr; \
-	stop = std::clock(); \
-	std::fprintf(stderr, "%s: %.fns/op\n", #expr, \
-		(double) (stop - start) / (n) / CLOCKS_PER_SEC * 1e9); \
-} while (0)
-
-#define MAX_ENTRY 100
+#include "common.h"
 
 static void create_serialize(capnp::MessageBuilder *builder)
 {

@@ -2,17 +2,8 @@
 #include "libnbuf.h"
 
 #include <assert.h>
-#include <time.h>
 
-#define BENCH(expr, n) do { \
-	clock_t start = clock(), stop; \
-	for (int i = 0; i < n; i++) expr; \
-	stop = clock(); \
-	fprintf(stderr, "%s: %.fns/op\n", #expr, \
-		(double) (stop - start) / (n) / CLOCKS_PER_SEC * 1e9); \
-} while (0)
-
-#define MAX_ENTRY 100
+#include "common.h"
 
 static void create_serialize(struct nbuf *buf)
 {
@@ -107,7 +98,7 @@ int main()
 	BENCH(deserialize_use(&buf), 100000);
 	get_Root(&root, &buf, 0);
 	{
-		FILE *f = fopen("/dev/null", "w");
+		FILE *f = fopen(NUL_FILE, "w");
 		BENCH(print_text_format(f, root), 2000);
 		fclose(f);
 	}

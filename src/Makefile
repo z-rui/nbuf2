@@ -1,24 +1,41 @@
-CC=gcc
-CFLAGS=-g -Wall -fPIC
-NBUFC=nbufc/nbufc
+CFLAGS=-g -Wall -fPIC $(SYS_CFLAGS)
+LDFLAGS=$(SYS_LDFLAGS)
+SHLIB_EXT=so
 
-all: libnbuf.a libnbuf.so
-	make -C nbufc/ CFLAGS='-I.. $(CFLAGS)'
+LIBS=libnbuf.a
+BINS=
+ifeq ($(OS), Windows_NT)
+	SHLIB_EXT=dll
+	LDFLAGS+=-Wl,--out-implib,$@.a
+	BINS+=libnbuf.$(SHLIB_EXT)
+	LIBS+=libnbuf.$(SHLIB_EXT).a
+else
+	LIBS+=libnbuf.$(SHLIB_EXT)
+endif
+HDRS=nbuf.h libnbuf.h nbuf_schema.nb.h
+
+
+all: $(LIBS)
+	make -C nbufc/
+
+install: $(LIBS) $(BINS)
+	cp $(LIBS) $(PREFIX)/lib
+	for i in $(BINS); do cp $$i $(PREFIX)/bin; done
+	cp $(HDRS) $(PREFIX)/include
+	make install -C nbufc/
 
 OBJS=refl.o parse.o print.o lex.o nbuf.o util.o nbuf_schema.nb.o
 
 clean:
-	rm -f $(OBJS) libnbuf.a libnbuf.so
+	rm -f $(OBJS)
 	make clean -C nbufc/
 
 libnbuf.a: $(OBJS)
 	ar rcu $@ $^
 
-libnbuf.so: $(OBJS)
+libnbuf.$(SHLIB_EXT): $(OBJS)
 	$(CC) $(LDFLAGS) -shared -o $@ $^
 
-%.nb.h %.nb.c: %.nbuf
-	$(NBUFC) -c_out $<
 
 lex.o: lex.c lex.h nbuf.h
 nbuf.o: nbuf.c nbuf.h
