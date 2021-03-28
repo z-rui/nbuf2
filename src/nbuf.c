@@ -70,9 +70,9 @@ nbuf_fix_arr(struct nbuf_obj *o, nbuf_word_t len,
 		nbuf_word_t *pptr = (nbuf_word_t *) nbuf_obj_base(&it);
 		for (j = 0; j < it.psize; j++) {
 			nbuf_word_t rel_ptr = nbuf_word(pptr);
-			assert(p != NULL);
 			if (rel_ptr == 0)
 				continue;
+			assert(p != NULL);
 			rel_ptr = ~rel_ptr + (p - pptr);
 			assert((size_t) ((char *) (pptr + rel_ptr) - it.buf->base) < it.buf->len);
 			*pptr++ = nbuf_word(&rel_ptr);
