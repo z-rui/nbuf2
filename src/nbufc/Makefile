@@ -2,7 +2,6 @@ CFLAGS=-g -Wall -I.. -fPIC $(SYS_CFLAGS)
 LDFLAGS=-L. -L.. $(SYS_LDFLAGS)
 SHLIB_EXT=so
 
-
 LIBS=libnbufc.a
 BINS=nbufc
 
@@ -33,7 +32,7 @@ libnbufc.a: $(OBJS)
 libnbufc.$(SHLIB_EXT): $(OBJS)
 	$(CC) $(LDFLAGS) -shared -o $@ $^ -lnbuf
 
-nbufc: nbufc.o #$(LIBS)
+nbufc: nbufc.o $(LIBS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lnbufc -lnbuf
 
 compile.o: compile.c ../nbuf.h ../nbuf_schema.nb.h ../nbuf.h ../lex.h \
