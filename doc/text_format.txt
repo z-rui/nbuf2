@@ -1,0 +1,51 @@
+# Text format
+
+A text format is helpful for a human to inspect the content in wire format.
+
+A message can be printed in text format as several fields
+
+    msg ::= { field }
+
+Each field prints its name first, followed by its value.  If the field is a
+message, the value will be printed in text format, surrounded by braces.
+Otherwise, the value will be printed after a colon.
+
+    field ::= String ':' (Integer|Float|String|Identifier)
+            | String '{' msg '}'
+
+If the field is boolean, the value is either true or false.
+If the field is integer, the value should be an Integer.
+If the field is float, the value can be either Integer or Float.
+If the field is an enum, the value can be an Identifier, which corresponds to
+a symbol defined for that type, or an Integer.
+For a repeated field, the above construct is repeated for each element.
+
+For example, a schema defined as follows:
+
+    enum Op {
+        START, STOP
+    }
+    message Root {
+        Entry[] entries;
+    }
+    message entries {
+        Op op;
+	float value;
+	string message;
+    }
+
+A message of Root may be printed as
+
+    entries {
+        op: START
+	message: "Hello"
+	value: 1.414e6
+    }
+    entries {
+        op: STOP
+	message: "Goodbye"
+	value: 42
+    }
+
+libnbuf provides functions that prints a message in text format, and parses a
+message from text format.

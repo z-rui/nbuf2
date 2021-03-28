@@ -1,0 +1,293 @@
+# Buffer API
+
+    struct nbuf {
+        char *base;  // base pointer to the buffer
+	size_t size;  // number of bytes the buffer holds
+	size_t cap;  // number of bytes allocated (for dynamic buffers)
+    };
+
+This structure represents a buffer.  It can be initialized by 
+
+    void nbuf_init_ro(char *base, size_t size);  // static buffer
+    size_t nbuf_init_rw(size_t size);  // dynamic buffer
+
+The dynamic buffer can grow dynamically as needed.  To use it, link with
+libnbuf.  The dynamic buffer owns memory which needs to be freed by
+nbuf_clear().
+
+The general convensions are:
+
+  - Zero return value indicates an error.
+  - The output structure is before other parameters.
+
+libnbuf provides convenience functions to load/save buffer from/to files.
+
+    size_t nbuf_load_file(struct nbuf *buf, const char *filename);
+    size_t nbuf_save_file(struct nbuf *buf, const char *filename);
+
+The buffer loaded from file is mean to be read only.  Thus, do not use set_*
+functions to alter the content.  The implmentation may memory-map the file, so
+its should only be used for regular files.  It has to be freed by nbuf_unload_file().
+
+The user can simply use the buffer as an dynamic array.  To add content:
+
+    char *nbuf_alloc(struct nbuf *buf, size_t size);
+    char *nbuf_alloc_aligned(struct nbuf *buf, size_t size, size_t align);
+    char *nbuf_add(struct nbuf *buf, const void *ptr, size_t size);
+    char *nbuf_add1(struct nbuf *buf, char ch);
+
+The reading and writing of the wire format is built on top this buffer API.
+
+# Raw object API
+
+    struct nbuf_obj {
+        struct nbuf *buf;
+	uint32_t offset;
+	uint16_t ssize;
+	uint16_t psize;
+    };
+
+Raw object API can manipulate objects without type information.  Refer to
+nbuf.h for their usage.
+
+    /* Pointer to the base_obj on the wire */
+    char *nbuf_obj_base(const struct nbuf_obj *o);
+    /* Size of one base_obj on the wire */
+    size_t nbuf_obj_size(const struct nbuf_obj *o);
+    /* Allocate a singular object */
+    size_t nbuf_alloc_obj(struct nbuf_obj *o);
+    /* Allocate a repeated object */
+    size_t nbuf_alloc_arr(struct nbuf_obj *o);
+    /* Get address of scalar of size sz at offset */
+    char *nbuf_obj_s(const struct nbuf_obj *o, size_t offset, size_t sz);
+    /* Get object pointed to by pointer at offset */
+    size_t nbuf_obj_p(struct nbuf_obj *oo, const struct nbuf_obj *o,
+                      size_t offset);
+    /* Set pointer at offset to point to rhs */
+    size_t nbuf_obj_set_p(struct nbuf_obj *o, size_t offset,
+                          const struct nbuf_obj *rhs);
+
+# Generated C API
+
+For a schema file, a ".nb.c" and a ".nb.h" file will be generated.
+The header file contains generated type definitions and setters/getters of
+message fields.
+
+The 2 common use cases are
+
+1. Read a message from a buffer.  This is done by creating a buffer, and call
+get_*() function.  The caller can subsequently call getters and visit all
+fields in the message.
+
+2. Write a message into a fresh buffer.  This is done by creating a writable
+buffer, and call alloc_*() function.  The caller can subsequently call setters
+and write out all fields.  Because writing may grow the buffer, libnbuf needs
+to be linked.  If only reading is involved, the inlined writing functions
+won't be linked into the binary, and thus libnbuf is not needed.
+
+If a message is read from a writable buffer, it may be possible to modify
+in-place.  However, there are several limitations:
+
+- If the message was created using an older schema, the new fields added
+  after that schema cannot be set.
+- Repeated field cannot change its length.
+
+The C file contains a serialized schema for all defined types in this schema
+file.  It can be used for reflection-based functionalities, such as printing
+and parsing text format.  It doesn't need to be linked into the binary if not
+needed.
+
+If the schema imports other schemas, the generated C file will have references
+to the other schemas, and they must be linked together.
+
+## Package name
+
+If the package name is not empty, every symbol will be prefixed by the package
+name (with all dots replaced by underscore) and an underscore.
+
+For example, the schema
+
+    package nbuf;
+
+    enum Kind { /*...*/ }
+    message Schema { /*...*/ }
+    /*...*/
+
+will generate the following C types:
+
+    typedef enum { /* ... */ } nbuf_Kind;
+    typedef struct { struct nbuf_obj o; } nbuf_Schema;
+    /* ... */
+
+The message types are equivalent to struct nbuf_obj.  They are defined to be
+new types to make use of compiler's type system.  Sometimes the user wants to
+defeat the type system, e.g., some library functions takes in a
+struct nbuf_obj * so that messages of any type is accepted.  In this case,
+macro NBUF_OBJ can be used to convert any message type to a struct nbuf_obj *.
+
+## Enum type
+
+For each symbol in the enum, the generated name will be prefixed by the enum
+type name, after the package prefix.  Thus, the enum
+
+    package nbuf;
+    enum Kind {
+    	BOOL = 1,
+	ENUM,
+	/* ... */
+    }
+
+corresponds to the following C enum definition:
+
+    typdef enum {
+        nbuf_Kind_BOOL = 1,
+	nbuf_Kind_ENUM = 2,
+	/* ... */
+    } nbuf_Kind;
+
+## Message type
+
+For any message type M, the user can call
+
+    size_t get_M(M *o, struct nbuf *buf, size_t offset);
+
+to obtain the message at the given offset.  Usually, the root object is located
+at the beginning of the buffer, thus the offset will be 0.
+
+Two allocators are generated:
+
+    size_t alloc_M(M *o, struct nbuf *buf);  // *o = new M
+    size_t alloc_multi_M(M *o, struct nbuf *buf, size_t n);  // *o = new M[n]
+
+They will allocate a singular or repeated message on the buffer.  The common
+usage is to use the singular one to allocate the root object.
+
+Getters and setters will be generated for message fields.  Depending on the
+field type, their signature may be different.
+
+### Singular scalar field
+
+A singular scalar field F of type T in message M will have
+
+    T M_F(M m);  // getter: M.F
+    void *M_set_F(M m, T v);  // setter: M.F = v
+
+The setter will return zero on failure.  That may happen if the message was
+created with a smaller scalar part which doesn't cover this field.
+
+### Repeated scalar field
+
+A repeated scalar field F of type T in message M will have
+
+    T M_F(M m, size_t i);  // getter: M.F[i]
+    size_t M_F_size(M m);  // length(M.F)
+    void *M_set_F(M m, size_t i, T v);  // setter: M.F[i] = v
+    void *M_alloc_F(M m, size_t n);
+
+The getter and setter have the same semantics, but accesses the i-th element.
+If the field was never allocated, getter and setter will always fail.
+The alloc function allocates n elements for the field.
+
+### Singular string field
+
+A singular string field F in message M will have
+
+    const char *M_F(M m, size_t *lenp);  // getter: M.F
+    size_t M_set_F(M m, const char *s, size_t len);  // setter: M.F = s
+
+For the getter, *lenp will be set to the string length if lenp != NULL.
+For the setter, if len == -1, it will be treated as if strlen(s).  Thus, if
+the string has an embedded '\0', the length must be explicitly specified.
+The string s is made a copy if s != NULL.
+If the field is not set, the getter will return an empty string and set *lenp
+to zero.
+
+### Repeated string field
+
+A repeated string field F in message M will have
+
+    const char *M_F(M m, size_t i, size_t *lenp);  // getter: M.F[i]
+    size_t M_F_size(M m);  // length(M.F)
+    size_t M_set_F(M m, size_t i, const char *s, size_t len);
+    // setter: M.F[i] = s
+    size_t M_alloc_F(M m, size_t n);
+
+The getter and setter have the same semantics, but accesses the i-th element.
+If the field was never allocated, getter and setter will always fail.
+The alloc function allocates n elements for the field.  The newly allocated
+strings are initially empty, and can be set by the setter.
+
+### Singular message field
+
+A singular message field F of type T in message M will have
+
+    size_t M_F(T *o, M m);  // getter: *o = M.F
+    size_t M_alloc_F(T *o, M m) // allocate: *o = M.F = new T
+
+There is no setter, and the user should allocate the field and set its fields
+individually.  If the field was never allocated, the getter will fail.
+
+### Repeated message field
+
+A singular message field F of type T in message M will have
+
+    size_t M_F(T *o, M m, size_t i);  // getter: *o = M.F[i]
+    size_t M_F_size(M m);  // length(M.F)
+    size_t M_alloc_F(T *o, M m, size_t n) // allocate: *o = M.F = new T[n]
+
+If i == 0, the return value will be the length of the repeated field.
+The successive elements can be accessed by calling nbuf_next, which is
+slightly cheaper than M_F with other indicies.
+If the field was never allocated, the getter will fail.
+
+## Raw API for pointer fields
+
+A pointer field is one of:
+
+  - String field
+  - Message field
+  - Any repeated field
+
+Instead of using the generated field allocators, they can also be allocated
+separately, using nbuf_alloc_arr, nbuf_alloc_str, or (for message types) the
+generated alloc_*() functions.
+Then, the pointer can be set by the raw API to point to the newly allocated
+object.  This is actually how the previous APIs are implemented.
+
+    /* Allocator of repeated scalar T */
+    M_alloc_F(M m, size_t n)
+    {
+    	/* ssize = size of scalar T
+	 * offset = offset of field F in M's scalar part */
+        struct nbuf_obj o = {NBUF_OBJ(m)->buf, ssize, 0};
+	nbuf_alloc_arr(&o, n);
+	nbuf_set_p(NBUF_OBJ(m), offset, o);
+    }
+    /* Setter of singular string */
+    M_set_F(M m, const char *s, size_t len)
+    {
+	/* offset = offset of field F in M's pointer part */
+        struct nbuf_obj o = {NBUF_OBJ(m)->buf};
+	nbuf_alloc_str(&o, s, len);
+	nbuf_set_p(NBUF_OBJ(m), offset, o);
+    }
+    /* Allocator of repeated strings */
+    M_alloc_F(M m, size_t n)
+    {
+	/* offset = offset of field F in M's pointer part */
+        struct nbuf_obj o = {NBUF_OBJ(m)->buf, 0, 1};
+	nbuf_alloc_arr(&o, n);
+	nbuf_set_p(NBUF_OBJ(m), offset, o);
+    }
+    /* Allocator of singular message of type T */
+    M_alloc_F(T *o, M m, size_t n)
+    {
+	alloc_T(&o, NBUF_OBJ(m)->buf, n);
+	nbuf_set_p(NBUF_OBJ(m), offset, o);
+    }
+    /* Allocator of repeated messages of type T */
+    M_alloc_F(T *o, M m, size_t n)
+    {
+	alloc_multi_T(&o, NBUF_OBJ(m)->buf, n);
+	nbuf_set_p(NBUF_OBJ(m), offset, o);
+    }

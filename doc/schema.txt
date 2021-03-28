@@ -1,0 +1,100 @@
+# Lexical conventions
+
+The lexical rules for the most part aligns with the C programming language.
+
+  - Identifier: [A-Za-z_][A-Za-z0-9_]*
+  - Integer: decimal (123), octal (0644), or hexadecimal (0xdeadbeef).
+  - Floating point: -2.787e+50  (note, hexadecimal is not supported).
+  - String: double-quoted with C-style escape sequence.  Adjacent strings
+    are concatenated.
+  - Comment: C-style (/* comment */), C++-style (// line comment) or
+    shell-style (# line comment).  Treated as a space.
+
+# Schema
+
+A schema is a collection of definitions of message types and enum types.
+A schema can be specified in text format, whose syntax is specified below.
+
+    schema ::= [ package_stmt ] { import_stmt } { enum_def } { msg_def }
+
+A schema may have a package name.
+    package_stmt ::= "package" qualified_id ";"
+    qualified_id ::= Identifier { "." Identifier };
+
+If a typename "T" is defined in a package named "P", it can be referred to as
+"P.T".  Identifiers separated by dots are called qualified identifiers.
+A schema in the same package can also refer to it as "T", omitting the
+package name.
+
+If a typename "T" is defined in a package without package name, it can only be
+referred to as "T" by a schema in the same package (i.e., without package
+name).
+
+Any defined name in a schema must be unique in its scope.  That includes:
+
+- User-defined typenames: the scope is the current package.  In addition, they
+  must not equal any builtin names.
+- Enum values: the scope is the current enum type.
+- Message fields: the scope is the current message type.
+
+## Imports
+
+A schema may import other schemas using import statement.
+
+    import_stmt ::= "import" String ";"
+
+The string is interpreted as the path of another schema.  Circular imports are
+not allowed because dealing with circular dependency is painful in many
+languages.  That means:
+
+  - Types in different packages cannot mutually depend on each other.
+  - Types in the same package can only mutually depend on each other if they
+    are specified in the same schema (same file).
+
+## Enums
+
+A schema may define enum types.  An enum type is equivalent to a 16-bit
+signed integer.  The API will include symbol to value mappings, so the user
+can use symbolic names.
+
+    enum_def ::= "enum" Identifier "{" enum_val_list [ "," ] "}"
+    enum_val_list ::= enum_val { "," enum_val }
+    enum_val ::= Identifier [ "=" Integer ]
+
+The enum must have at least one symbol defined.  The Identifier specifies the
+symbolic name, and Integer specifies the numeric value.
+If Integer is omitted, a default value is used.  The default value is the
+numeric value of the previous symbol plus 1, or zero if this is the first
+symbol.
+
+The symbol definitions must be separated by commas.  An optional comma is
+accepted at before the closing brace.
+
+## Messages 
+
+A schema may define message types.  The API will include getter/setters of the
+fields.
+
+    msg_def ::= "message" Identifier "{" field_list "}"
+    field_list ::= field_def { field_def }
+    field_def ::= qualified_id [ "[" "]" ] Identifier ";"
+
+The message must have at least one field defined.  The qualified_id specifies
+the type of the field, and Identifier specifies the name of the field.
+
+The field type can be builtin types or defined types.  The builtin types are
+
+    bool  # only has two values: true (1) and false (0), stored as uint8
+    uint8 uint16 uint32 uint64  # unsigned integers
+    int8 int16 int32 int64  # signed integers
+    float double  # floating point
+    string
+
+If not a builtin type, the current schema and all direct imports are examined
+to resolve the type.  The typename does not have to be defined before it is
+referenced as the field type.
+
+If "[]" follows the type, then it's a repeated field; otherwise, it's a
+singular field.
+
+The field definitions must terminate with a semicolon.
