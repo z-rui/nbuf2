@@ -7,16 +7,16 @@ all: nbufc libnbufc.a libnbufc.so
 OBJS=raw.o lang_c.o compile.o util.o
 
 clean:
-	rm *.o libnbufc.a libnbufc.so
+	rm -f *.o libnbufc.a libnbufc.so
 
 libnbufc.a: $(OBJS)
 	ar rcu $@ $^
 
 libnbufc.so: $(OBJS)
-	$(CC) $(LDFLAGS) -shared -o $@ $^
+	$(CC) $(LDFLAGS) -shared -o $@ $^ -lnbuf
 
-nbufc: nbufc.o ./libnbufc.a ../libnbuf.a
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+nbufc: nbufc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ -lnbufc -lnbuf
 
 compile.o: compile.c ../nbuf.h ../nbuf_schema.nb.h ../nbuf.h ../lex.h \
  util.h ../libnbuf.h ../nbuf_schema.nb.h libnbufc.h

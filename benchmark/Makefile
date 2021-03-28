@@ -43,6 +43,11 @@ benchmark_fb.o: benchmark_fb.cc benchmark_generated.h
 benchmark_cp: benchmark_cp.o benchmark.capnp.o
 	$(CXX) $(LDFLAGS) -o $@ $^ -lcapnp -lcapnpc
 
+benchmark_cp.o: benchmark_cp.cc benchmark.capnp.h
+
+benchmark.capnp:
+	#
+
 benchmark.capnp.o: benchmark.capnp.c++ benchmark.capnp.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
