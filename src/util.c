@@ -12,67 +12,122 @@
 # include <unistd.h>
 #endif
 
-size_t nbuf_load_file(struct nbuf *buf, const char *filename)
+static size_t nbuf_load_fd_read(struct nbuf *buf, int fd)
 {
-#if _POSIX_MAPPED_FILES && !defined __SANITIZE_ADDRESS__
-	int fd;
+	size_t readsz;
+	ssize_t n;
+
+	do {
+		if (!nbuf_alloc(buf, BUFSIZ))
+			goto err;
+		buf->len -= BUFSIZ;
+		readsz = buf->cap - buf->len;
+		n = read(fd, buf->base + buf->len, readsz);
+		if (n == -1) {
+			perror("read");
+			goto err;
+		}
+		buf->len += n;
+	} while (n == readsz);
+	return buf->len;
+err:
+	nbuf_clear(buf);
+	return 0;
+}
+
+#if _POSIX_C_SOURCE
+size_t nbuf_load_fd(struct nbuf *buf, int fd)
+{
 	struct stat statbuf;
 
-	fd = open(filename, O_RDONLY);
-	if (fd == -1) {
-		perror(filename);
-		return 0;
-	}
 	if (fstat(fd, &statbuf) == -1) {
-		perror(filename);
-		close(fd);
+		perror("fstat");
 		return 0;
 	}
+	buf->base = NULL;
 	buf->len = statbuf.st_size;
 	buf->cap = 0;
-	buf->base = buf->len ?
-		(char *) mmap(NULL, buf->len, PROT_READ, MAP_SHARED, fd, 0) :
-		NULL;
-	close(fd);
-	if (buf->base == MAP_FAILED) {
-		buf->base = NULL;
-		perror("mmap");
-		return 0;
+#if _POSIX_MAPPED_FILES && !defined __SANITIZE_ADDRESS__
+	if (buf->len && S_ISREG(statbuf.st_mode)) {
+		buf->base = mmap(NULL, buf->len, PROT_READ, MAP_SHARED, fd, 0);
+		if (buf->base == MAP_FAILED) {
+			buf->base = NULL;
+			buf->len = 0;
+			perror("mmap");
+		}
+		return buf->len;
 	}
-#else  /* portable C */
+	return nbuf_load_fd_read(buf, fd);
+#endif
+}
+#endif
+
+size_t nbuf_load_fp(struct nbuf *buf, FILE *f)
+{
+#if _POSIX_C_SOURCE
+	return nbuf_load_fd(buf, fileno(f));
+#else
+	int ch;
+
+	nbuf_init_rw(buf, BUFSIZ);
+	while ((ch = getchar()) != EOF)
+		if (!nbuf_add1(buf, ch))
+			goto err;
+	if (ferror(f)) {
+		perror(filename);
+err:
+		nbuf_clear(buf);
+		return 1;
+	}
+#endif
+	return 0;
+}
+
+size_t nbuf_load_file(struct nbuf *buf, const char *filename)
+{
 	FILE *f;
+	size_t rc = 0;
 
 	f = fopen(filename, "r");
 	if (!f) {
 		perror(filename);
 		return 0;
 	}
-	fseek(f, 0, SEEK_END);
-	buf->base = NULL;
-	buf->len = ftell(f);
-	buf->cap = 0;
-	if (buf->len > 0 && (buf->base = malloc(buf->len)) != NULL) {
-		rewind(f);
-		buf->len = fread(buf->base, 1, buf->len, f);
-		if (buf->len == 0) {
-			free(buf->base);
-			buf->base = NULL;
-		}
-	}
-#endif
-	return buf->len;
+	rc = nbuf_load_fp(buf, f);
+	fclose(f);
+	return rc;
 }
 
 void nbuf_unload_file(struct nbuf *buf)
 {
-#if _POSIX_MAPPED_FILES && !defined __SANITIZE_ADDRESS__
-	if (buf->base && munmap(buf->base, buf->len) == -1)
-		perror("munmap");
-#else
-	free(buf->base);
+#if _POSIX_MAPPED_FILES
+	if (buf->base != NULL && buf->cap == 0) {
+		/* mmap-ed region */
+		if (munmap(buf->base, buf->len) == -1)
+			perror("nbuf_unload_file: cannot unmap");
+	} else
 #endif
+	free(buf->base);
 	buf->base = NULL;
 	buf->len = buf->cap = 0;
+}
+
+size_t nbuf_save_fd(struct nbuf *buf, int fd)
+{
+	if (write(fd, buf->base, buf->len) != buf->len) {
+		perror("write");
+		return 0;
+	}
+	return buf->len;
+}
+
+size_t nbuf_save_fp(struct nbuf *buf, FILE *f)
+{
+	if (fwrite(buf->base, 1, buf->len, f) != buf->len) {
+		perror("fwrite");
+		return 0;
+	}
+	return buf->len;
 }
 
 size_t nbuf_save_file(struct nbuf *buf, const char *filename)
@@ -85,11 +140,11 @@ size_t nbuf_save_file(struct nbuf *buf, const char *filename)
 		perror("fopen");
 		return 0;
 	}
-	if (fwrite(buf->base, 1, buf->len, f) != buf->len) {
-		perror("fwrite");
-	} else {
-		rc = buf->len;
-	}
+#if _POSIX_C_SOURCE
+	rc = nbuf_save_fd(buf, fileno(f));
+#else
+	rc = nbuf_save_fp(buf, f);
+#endif
 	fclose(f);
 	return rc;
 }

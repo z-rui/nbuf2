@@ -73,17 +73,6 @@ bin_out(struct ctx *ctx, const char *path)
 	return 0;
 }
 
-static bool
-read_stream(struct nbuf *buf, FILE *f)
-{
-	int ch;
-
-	while ((ch = getchar()) != EOF)
-		if (!nbuf_add1(buf, ch))
-			return false;
-	return true;
-}
-
 static int
 decode(struct ctx *ctx, const char *msg_type)
 {
@@ -105,11 +94,9 @@ decode(struct ctx *ctx, const char *msg_type)
 		fprintf(stderr, "error: '%s' is not a message type name\n", msg_type);
 		return 1;
 	}
-	if (!nbuf_init_rw(&buf, 4096))
-		return 1;
-	if (!read_stream(&buf, stdin)) {
+	if (!nbuf_load_fp(&buf, stdin)) {
 		fprintf(stderr, "error: cannot read input\n");
-		goto err;
+		return 1;
 	}
 	o.buf = &buf;
 	o.offset = 0;
@@ -123,10 +110,10 @@ decode(struct ctx *ctx, const char *msg_type)
 	opt.msg_type_hdr = true;
 	if (!nbuf_print(&opt, &o, mdef))
 		goto err;
-	nbuf_clear(&buf);
+	nbuf_unload_file(&buf);
 	return 0;
 err:
-	nbuf_clear(&buf);
+	nbuf_unload_file(&buf);
 	fprintf(stderr, "decode failed\n");
 	return 1;
 }
@@ -160,9 +147,7 @@ encode(struct ctx *ctx, const char *msg_type)
 		fprintf(stderr, "'%s' is not a message type name\n", msg_type);
 		return 1;
 	}
-	if (!nbuf_init_rw(&buf, 4096))
-		goto err;
-	if (!read_stream(&buf, stdin)) {
+	if (!nbuf_load_fp(&buf, stdin)) {
 		fprintf(stderr, "cannot read input\n");
 		goto err;
 	}
@@ -173,7 +158,7 @@ encode(struct ctx *ctx, const char *msg_type)
 		rc = 0;
 err:
 	nbuf_clear(&outbuf);
-	nbuf_clear(&buf);
+	nbuf_unload_file(&buf);
 	if (rc)
 		fprintf(stderr, "encode failed\n");
 	return rc;

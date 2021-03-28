@@ -17,8 +17,13 @@ extern "C" {
  * nbuf_load_file may use mmap() to load the file content, so it has
  * to be released by nbuf_unload_file().
  */
+size_t nbuf_load_fp(struct nbuf *buf, FILE *f);
+size_t nbuf_load_fd(struct nbuf *buf, int fd);
 size_t nbuf_load_file(struct nbuf *buf, const char *filename);
 void nbuf_unload_file(struct nbuf *buf);
+
+size_t nbuf_save_fp(struct nbuf *buf, FILE *f);
+size_t nbuf_save_fd(struct nbuf *buf, int fd);
 size_t nbuf_save_file(struct nbuf *buf, const char *filename);
 
 /* Reflection */
