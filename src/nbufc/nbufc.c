@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef _WIN32
+# include <io.h>
+#endif
+
 struct ctx {
 	const char *progname;
 	struct nbuf_schema_set *ss;
@@ -94,6 +98,9 @@ decode(struct ctx *ctx, const char *msg_type)
 		fprintf(stderr, "error: '%s' is not a message type name\n", msg_type);
 		return 1;
 	}
+#ifdef _WIN32
+	_setmode(_fileno(stdin), _O_BINARY);
+#endif
 	if (!nbuf_load_fp(&buf, stdin)) {
 		fprintf(stderr, "error: cannot read input\n");
 		return 1;
@@ -154,7 +161,10 @@ encode(struct ctx *ctx, const char *msg_type)
 	nbuf_init_rw(&outbuf, 4096);
 	if (!nbuf_parse(&opt, &dummy, buf.base, buf.len, mdef))
 		goto err;
-	if (fwrite(outbuf.base, 1, outbuf.len, stdout) == outbuf.len)
+#ifdef _WIN32
+	_setmode(_fileno(stdout), _O_BINARY);
+#endif
+	if (nbuf_save_fp(&outbuf, stdout))
 		rc = 0;
 err:
 	nbuf_clear(&outbuf);
