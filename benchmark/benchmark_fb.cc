@@ -87,6 +87,8 @@ int main()
 	flatbuffers::FlatBufferBuilder builder;
 	BENCH(create_serialize(builder), 100000);
 	BENCH(verify(builder), 100000);
+	flatbuffers::SaveFile("benchmark_fb.bin",
+		(const char *) builder.GetBufferPointer(), builder.GetSize(), /*binary=*/true);
 	const Root *root = GetRoot(builder.GetBufferPointer());
 	BENCH(deserialize_use(root), 100000);
 	std::string buf, schemafile;
