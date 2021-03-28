@@ -94,10 +94,11 @@ size_t nbuf_load_fp(struct nbuf *buf, FILE *f)
 #elif defined _WIN32
 	return nbuf_load_fd(buf, _fileno(f));
 #else
+	/* generic implementation */
 	int ch;
 
 	nbuf_init_rw(buf, BUFSIZ);
-	while ((ch = getchar()) != EOF)
+	while ((ch = getc(f)) != EOF)
 		if (!nbuf_add1(buf, ch))
 			goto err;
 	if (ferror(f)) {
