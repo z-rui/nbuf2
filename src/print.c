@@ -15,6 +15,22 @@ struct ctx {
 static bool
 print_msg(struct ctx *ctx, const struct nbuf_obj *o, nbuf_MsgDef mdef);
 
+static void
+indent(struct ctx *ctx)
+{
+	int curr_indent = ctx->curr_indent;
+
+	while (curr_indent-- > 0)
+		putc(' ', ctx->f);
+}
+
+static void
+indent_fname(struct ctx *ctx, const char *fname, size_t len)
+{
+	indent(ctx);
+	fwrite(fname, 1, len, ctx->f);
+}
+
 static bool
 print_scalar(struct ctx *ctx,
 	const void *ptr, nbuf_Kind kind, unsigned size)
@@ -83,7 +99,8 @@ print_field(struct ctx *ctx, const struct nbuf_obj *o, nbuf_FieldDef fdef)
 		nbuf_EnumDef edef;
 		nbuf_MsgDef mdef;
 	} u;
-	const char *fname = nbuf_FieldDef_name(fdef, NULL);
+	size_t fname_len;
+	const char *fname = nbuf_FieldDef_name(fdef, &fname_len);
 	size_t len, slen;
 	const void *ptr;
 	bool ok;
@@ -104,13 +121,14 @@ print_field(struct ctx *ctx, const struct nbuf_obj *o, nbuf_FieldDef fdef)
 		for (;;) {
 			ptr = nbuf_obj_base(&oo);
 print_one_scalar:
-			fprintf(ctx->f, "%*s%s: ", ctx->curr_indent, "", fname);
+			indent_fname(ctx, fname, fname_len);
+			fprintf(ctx->f, ": ");
 			ok = (base_kind == nbuf_Kind_ENUM) ?
 				print_enum(ctx, ptr, u.edef) :
 				print_scalar(ctx, ptr, base_kind, u.o.ssize);
 			if (!ok)
 				goto err;
-			fprintf(ctx->f, "%c", ctx->nl);
+			putc(ctx->nl, ctx->f);
 			if (--len == 0)
 				break;
 			nbuf_next(&oo);
@@ -134,13 +152,17 @@ print_one_scalar:
 		if (!(len = nbuf_obj_p(&oo, o, offset)))
 			break;
 		for (;;) {
-			fprintf(ctx->f, "%*s%s {%c", ctx->curr_indent, "", fname, ctx->nl);
+			indent_fname(ctx, fname, fname_len);
+			fprintf(ctx->f, " {");
+			putc(ctx->nl, ctx->f);
 			ctx->curr_indent += ctx->indent;
 			ok = print_msg(ctx, &oo, u.mdef);
 			if (!ok)
 				goto err;
 			ctx->curr_indent -= ctx->indent;
-			fprintf(ctx->f, "%*s}%c", ctx->curr_indent, "", ctx->nl);
+			indent(ctx);
+			putc('}', ctx->f);
+			putc(ctx->nl, ctx->f);
 			if (--len == 0)
 				break;
 			nbuf_next(&oo);
@@ -154,9 +176,10 @@ print_one_scalar:
 			slen = nbuf_obj_p(&ooo, &oo, 0);
 			ptr = nbuf_obj2str(&ooo, slen, &slen);
 print_one_str:
-			fprintf(ctx->f, "%*s%s: ", ctx->curr_indent, "", fname);
+			indent_fname(ctx, fname, fname_len);
+			fprintf(ctx->f, ": ");
 			nbuf_print_escaped(ctx->f, (const char *) ptr, slen, 0);
-			fprintf(ctx->f, "%c", ctx->nl);
+			putc(ctx->nl, ctx->f);
 			if (--len == 0)
 				break;
 			nbuf_next(&oo);
