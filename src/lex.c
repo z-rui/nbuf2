@@ -72,7 +72,7 @@ nbuf_lexsyntax(lexState *l, Token expect, Token seen)
 
 #define EOI(l) (l->input == l->input_end)
 #define GETC(l) (EOI(l) ? Token_EOF : *l->input++)
-#define UNGETC(l, c) (EOI(l) ? (void) 0 : (void) --l->input)
+#define UNGETC(l, c) ((c) == Token_EOF ? (void) 0 : (void) --l->input)
 
 /* skip until line end */
 static void
