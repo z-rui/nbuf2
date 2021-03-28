@@ -230,6 +230,9 @@ parse_repeated_field(struct ctx *ctx, struct nbuf_obj *o, const char *fname,
 	} else if (kind == nbuf_Kind_ENUM) {
 		it.ssize = 2;
 		it.psize = 0;
+	} else if (kind == nbuf_Kind_STR) {
+		it.ssize = 0;
+		it.psize = 1;
 	} else {
 		it.ssize = typespec->ssize;
 		it.psize = typespec->psize;
