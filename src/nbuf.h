@@ -127,7 +127,7 @@ static inline void nbuf_set_##prefix##bits(void *ptr, typ v) \
 	nbuf_set_u##bits(ptr, u.i); \
 }
 
-nbuf_scalar(i, 8, int16_t)
+nbuf_scalar(i, 8, int8_t)
 nbuf_scalar(i, 16, int16_t)
 nbuf_scalar(i, 32, int32_t)
 nbuf_scalar(i, 64, int64_t)
