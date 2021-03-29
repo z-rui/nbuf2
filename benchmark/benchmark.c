@@ -5,7 +5,7 @@
 
 #include "common.h"
 
-static void create_serialize(struct nbuf *buf)
+static void create_serialize(struct nbuf_buf *buf)
 {
 	static const float vec[3] = { 3.141, 2.718, 1.618 };
 	size_t i, j;
@@ -32,7 +32,7 @@ static void create_serialize(struct nbuf *buf)
 	}
 }
 
-static void deserialize_use(struct nbuf *buf)
+static void deserialize_use(struct nbuf_buf *buf)
 {
 	static const float vec[3] = { 3.141, 2.718, 1.618 };
 	Root root;
@@ -77,7 +77,7 @@ static void print_text_format(FILE *f, Root root)
 	nbuf_print(&opt, NBUF_OBJ(root), refl_Root);
 }
 
-static void parse_text_format(struct nbuf *in, struct nbuf *out)
+static void parse_text_format(struct nbuf_buf *in, struct nbuf_buf *out)
 {
 	extern const nbuf_MsgDef refl_Root;
 	struct nbuf_parse_opt opt = { .outbuf = out, .filename = "benchmark.nb.txt" };
@@ -89,7 +89,7 @@ static void parse_text_format(struct nbuf *in, struct nbuf *out)
 
 int main()
 {
-	struct nbuf buf;
+	struct nbuf_buf buf;
 	Root root;
 
 	memset(&buf, 0, sizeof buf);
@@ -108,7 +108,7 @@ int main()
 		fclose(f);
 	}
 	{
-		struct nbuf buf1;
+		struct nbuf_buf buf1;
 		nbuf_clear(&buf);
 		nbuf_load_file(&buf1, "benchmark.nb.txt");
 		BENCH(parse_text_format(&buf1, &buf), 2000);

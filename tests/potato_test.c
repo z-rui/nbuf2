@@ -40,7 +40,7 @@ static void print_trace(Potato potato)
 }
 
 int main() {
-	struct nbuf buf[1];
+	struct nbuf_buf buf[1];
 	Potato potato;
 
 	srand(time(NULL));

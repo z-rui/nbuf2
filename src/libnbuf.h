@@ -17,14 +17,14 @@ extern "C" {
  * nbuf_load_file may use mmap() to load the file content, so it has
  * to be released by nbuf_unload_file().
  */
-size_t nbuf_load_fp(struct nbuf *buf, FILE *f);
-size_t nbuf_load_fd(struct nbuf *buf, int fd);
-size_t nbuf_load_file(struct nbuf *buf, const char *filename);
-void nbuf_unload_file(struct nbuf *buf);
+size_t nbuf_load_fp(struct nbuf_buf *buf, FILE *f);
+size_t nbuf_load_fd(struct nbuf_buf *buf, int fd);
+size_t nbuf_load_file(struct nbuf_buf *buf, const char *filename);
+void nbuf_unload_file(struct nbuf_buf *buf);
 
-size_t nbuf_save_fp(struct nbuf *buf, FILE *f);
-size_t nbuf_save_fd(struct nbuf *buf, int fd);
-size_t nbuf_save_file(struct nbuf *buf, const char *filename);
+size_t nbuf_save_fp(struct nbuf_buf *buf, FILE *f);
+size_t nbuf_save_fd(struct nbuf_buf *buf, int fd);
+size_t nbuf_save_file(struct nbuf_buf *buf, const char *filename);
 
 /* Reflection */
 
@@ -37,7 +37,7 @@ size_t nbuf_save_file(struct nbuf *buf, const char *filename);
  * before including this file.
  */
 struct nbuf_schema_set {
-	struct nbuf buf;
+	struct nbuf_buf buf;
 	size_t nimports;
 	struct nbuf_schema_set *imports[NBUF_SS_IMPORTS];
 };
@@ -61,7 +61,7 @@ static inline bool nbuf_is_scalar(nbuf_Kind kind)
 nbuf_Kind nbuf_get_field_type(struct nbuf_obj *o, nbuf_FieldDef fdef);
 
 static inline size_t
-nbuf_refl_alloc_msg(struct nbuf_obj *o, struct nbuf *buf, nbuf_MsgDef mdef)
+nbuf_refl_alloc_msg(struct nbuf_obj *o, struct nbuf_buf *buf, nbuf_MsgDef mdef)
 {
 	o->buf = buf;
 	o->ssize = nbuf_MsgDef_ssize(mdef);
@@ -70,7 +70,7 @@ nbuf_refl_alloc_msg(struct nbuf_obj *o, struct nbuf *buf, nbuf_MsgDef mdef)
 }
 
 static inline size_t
-nbuf_refl_alloc_multi_msg(struct nbuf_obj *o, struct nbuf *buf, nbuf_MsgDef mdef, size_t n)
+nbuf_refl_alloc_multi_msg(struct nbuf_obj *o, struct nbuf_buf *buf, nbuf_MsgDef mdef, size_t n)
 {
 	o->buf = buf;
 	o->ssize = nbuf_MsgDef_ssize(mdef);
@@ -112,7 +112,7 @@ bool nbuf_print(const struct nbuf_print_opt *opt,
 /* Text format parser. */
 struct nbuf_parse_opt {
 	/* Schema */
-	struct nbuf *outbuf;
+	struct nbuf_buf *outbuf;
 	int max_depth;
 	const char *filename;
 };
@@ -124,7 +124,7 @@ struct nbuf_parse_opt {
 bool nbuf_parse(struct nbuf_parse_opt *opt, struct nbuf_obj *o,
 	const char *input, size_t input_len, nbuf_MsgDef mdef);
 
-size_t nbuf_unescape(struct nbuf *buf, const char *s, size_t len);
+size_t nbuf_unescape(struct nbuf_buf *buf, const char *s, size_t len);
 void nbuf_print_escaped(FILE *f, const char *s, size_t len, unsigned flags);
 
 #ifdef __cplusplus

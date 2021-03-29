@@ -41,9 +41,9 @@ const struct nbuf_schema_set NBUF_SS_NAME = {
 	}
 };
 
-const nbuf_EnumDef nbuf_refl_Kind = {{(struct nbuf *) &NBUF_SS_NAME, 64, 0, 2}};
-const nbuf_MsgDef nbuf_refl_Schema = {{(struct nbuf *) &NBUF_SS_NAME, 264, 4, 2}};
-const nbuf_MsgDef nbuf_refl_EnumDef = {{(struct nbuf *) &NBUF_SS_NAME, 276, 4, 2}};
-const nbuf_MsgDef nbuf_refl_EnumVal = {{(struct nbuf *) &NBUF_SS_NAME, 288, 4, 2}};
-const nbuf_MsgDef nbuf_refl_MsgDef = {{(struct nbuf *) &NBUF_SS_NAME, 300, 4, 2}};
-const nbuf_MsgDef nbuf_refl_FieldDef = {{(struct nbuf *) &NBUF_SS_NAME, 312, 4, 2}};
+const nbuf_EnumDef nbuf_refl_Kind = {{(struct nbuf_buf *) &NBUF_SS_NAME, 64, 0, 2}};
+const nbuf_MsgDef nbuf_refl_Schema = {{(struct nbuf_buf *) &NBUF_SS_NAME, 264, 4, 2}};
+const nbuf_MsgDef nbuf_refl_EnumDef = {{(struct nbuf_buf *) &NBUF_SS_NAME, 276, 4, 2}};
+const nbuf_MsgDef nbuf_refl_EnumVal = {{(struct nbuf_buf *) &NBUF_SS_NAME, 288, 4, 2}};
+const nbuf_MsgDef nbuf_refl_MsgDef = {{(struct nbuf_buf *) &NBUF_SS_NAME, 300, 4, 2}};
+const nbuf_MsgDef nbuf_refl_FieldDef = {{(struct nbuf_buf *) &NBUF_SS_NAME, 312, 4, 2}};

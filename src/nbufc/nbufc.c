@@ -82,7 +82,7 @@ decode(struct ctx *ctx, const char *msg_type)
 {
 	nbuf_MsgDef mdef;
 	struct nbuf_print_opt opt;
-	struct nbuf buf;
+	struct nbuf_buf buf;
 	struct nbuf_obj o;
 	nbuf_Schema schema;
 	nbuf_Kind kind;
@@ -129,7 +129,7 @@ static int
 encode(struct ctx *ctx, const char *msg_type)
 {
 	nbuf_MsgDef mdef;
-	struct nbuf buf, outbuf;
+	struct nbuf_buf buf, outbuf;
 	int rc = 1;
 	nbuf_Schema schema;
 	nbuf_Kind kind;
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
 	enum {
 		NONE, C_OUT, BIN_OUT, DECODE, DECODE_RAW, ENCODE,
 	} action = NONE;
-	struct nbuf outbuf = {NULL};
+	struct nbuf_buf outbuf = {NULL};
 	struct nbufc_compile_opt opt = {
 		.outbuf = &outbuf,
 	};

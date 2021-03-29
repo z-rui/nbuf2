@@ -97,7 +97,7 @@ static void out_struct(struct ctx *ctx, nbuf_MsgDef mdef)
 
 	// Get message from buffer.
 	fprintf(f, "static inline size_t\n");
-	fprintf(f, "%sget_%s(%s%s *msg, struct nbuf *buf, size_t offset)\n{\n",
+	fprintf(f, "%sget_%s(%s%s *msg, struct nbuf_buf *buf, size_t offset)\n{\n",
 		ctx->prefix, name, ctx->prefix, name);
 	fprintf(f, "\tstruct nbuf_obj *o = NBUF_OBJ(*msg);\n"
 		"\to->buf = buf;\n"
@@ -108,7 +108,7 @@ static void out_struct(struct ctx *ctx, nbuf_MsgDef mdef)
 	// Allocate message in buffer.
 	for (repeated = 0; repeated <= 1; ++repeated) {
 		fprintf(f, "static inline size_t\n");
-		fprintf(f, "%salloc_%s%s(%s%s *msg, struct nbuf *buf%s)\n{\n",
+		fprintf(f, "%salloc_%s%s(%s%s *msg, struct nbuf_buf *buf%s)\n{\n",
 			ctx->prefix, repeated ? "multi_" : "", name,
 			ctx->prefix, name, repeated ? ", size_t n" : "");
 		fprintf(f, "\tstruct nbuf_obj *o = NBUF_OBJ(*msg);\n"
@@ -472,14 +472,14 @@ static void out_refl_c(struct ctx *ctx)
 
 	for (n = nbuf_Schema_enums(&edef, ctx->schema, 0); n--; nbuf_next(NBUF_OBJ(edef))) {
 		fprintf(ctx->f, "const nbuf_EnumDef %srefl_%s = "
-			"{{(struct nbuf *) &NBUF_SS_NAME, %u, %u, %u}};\n",
+			"{{(struct nbuf_buf *) &NBUF_SS_NAME, %u, %u, %u}};\n",
 			ctx->prefix, nbuf_EnumDef_name(edef, NULL),
 			NBUF_OBJ(edef)->offset, NBUF_OBJ(edef)->ssize,
 			NBUF_OBJ(edef)->psize);
 	}
 	for (n = nbuf_Schema_messages(&mdef, ctx->schema, 0); n--; nbuf_next(NBUF_OBJ(mdef))) {
 		fprintf(ctx->f, "const nbuf_MsgDef %srefl_%s = "
-			"{{(struct nbuf *) &NBUF_SS_NAME, %u, %u, %u}};\n",
+			"{{(struct nbuf_buf *) &NBUF_SS_NAME, %u, %u, %u}};\n",
 			ctx->prefix, nbuf_MsgDef_name(mdef, NULL),
 			NBUF_OBJ(mdef)->offset, NBUF_OBJ(mdef)->ssize,
 			NBUF_OBJ(mdef)->psize);

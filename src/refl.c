@@ -50,7 +50,7 @@ nbuf_Kind nbuf_get_field_type(struct nbuf_obj *o, nbuf_FieldDef fdef)
 	case nbuf_Kind_ENUM:
 	case nbuf_Kind_MSG: {
 		unsigned import_id = nbuf_FieldDef_import_id(fdef);
-		struct nbuf *buf = NBUF_OBJ(fdef)->buf;
+		struct nbuf_buf *buf = NBUF_OBJ(fdef)->buf;
 		struct nbuf_schema_set *ss =
 			get_schema_set((struct nbuf_schema_set *) buf,
 			import_id);

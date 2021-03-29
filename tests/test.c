@@ -28,7 +28,7 @@ char *makemsg(int n)
 int main()
 {
 	int i;
-	struct nbuf buf[1];
+	struct nbuf_buf buf[1];
 	LogFile logfile;
 	logging_LogEntry entries;
 	const char output[] = "test.bin";

@@ -1,6 +1,6 @@
 # Buffer API
 
-    struct nbuf {
+    struct nbuf_buf {
         char *base;  // base pointer to the buffer
 	size_t size;  // number of bytes the buffer holds
 	size_t cap;  // number of bytes allocated (for dynamic buffers)
@@ -22,8 +22,8 @@ The general convensions are:
 
 libnbuf provides convenience functions to load/save buffer from/to files.
 
-    size_t nbuf_load_file(struct nbuf *buf, const char *filename);
-    size_t nbuf_save_file(struct nbuf *buf, const char *filename);
+    size_t nbuf_load_file(struct nbuf_buf *buf, const char *filename);
+    size_t nbuf_save_file(struct nbuf_buf *buf, const char *filename);
 
 The buffer loaded from file is mean to be read only.  Thus, do not use set_*
 functions to alter the content.  The implmentation may memory-map the file, so
@@ -31,17 +31,17 @@ its should only be used for regular files.  It has to be freed by nbuf_unload_fi
 
 The user can simply use the buffer as an dynamic array.  To add content:
 
-    char *nbuf_alloc(struct nbuf *buf, size_t size);
-    char *nbuf_alloc_aligned(struct nbuf *buf, size_t size, size_t align);
-    char *nbuf_add(struct nbuf *buf, const void *ptr, size_t size);
-    char *nbuf_add1(struct nbuf *buf, char ch);
+    char *nbuf_alloc(struct nbuf_buf *buf, size_t size);
+    char *nbuf_alloc_aligned(struct nbuf_buf *buf, size_t size, size_t align);
+    char *nbuf_add(struct nbuf_buf *buf, const void *ptr, size_t size);
+    char *nbuf_add1(struct nbuf_buf *buf, char ch);
 
 The reading and writing of the wire format is built on top this buffer API.
 
 # Raw object API
 
     struct nbuf_obj {
-        struct nbuf *buf;
+        struct nbuf_buf *buf;
 	uint32_t offset;
 	uint16_t ssize;
 	uint16_t psize;
@@ -149,15 +149,15 @@ corresponds to the following C enum definition:
 
 For any message type M, the user can call
 
-    size_t get_M(M *o, struct nbuf *buf, size_t offset);
+    size_t get_M(M *o, struct nbuf_buf *buf, size_t offset);
 
 to obtain the message at the given offset.  Usually, the root object is located
 at the beginning of the buffer, thus the offset will be 0.
 
 Two allocators are generated:
 
-    size_t alloc_M(M *o, struct nbuf *buf);  // *o = new M
-    size_t alloc_multi_M(M *o, struct nbuf *buf, size_t n);  // *o = new M[n]
+    size_t alloc_M(M *o, struct nbuf_buf *buf);  // *o = new M
+    size_t alloc_multi_M(M *o, struct nbuf_buf *buf, size_t n);  // *o = new M[n]
 
 They will allocate a singular or repeated message on the buffer.  The common
 usage is to use the singular one to allocate the root object.

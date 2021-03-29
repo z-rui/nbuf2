@@ -10,7 +10,7 @@
 /* Schema compiler: compile a text schema into a nbuf.Schema object
  * in the buffer. */
 struct nbufc_compile_opt {
-	struct nbuf *outbuf;
+	struct nbuf_buf *outbuf;
 };
 struct nbuf_schema_set *
 nbufc_compile(const struct nbufc_compile_opt *opt, const char *filename);

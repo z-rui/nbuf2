@@ -26,7 +26,7 @@ typedef struct nbuf_Schema_ {
 extern const struct nbuf_MsgDef_ nbuf_refl_Schema;
 
 static inline size_t
-nbuf_get_Schema(nbuf_Schema *msg, struct nbuf *buf, size_t offset)
+nbuf_get_Schema(nbuf_Schema *msg, struct nbuf_buf *buf, size_t offset)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -35,7 +35,7 @@ nbuf_get_Schema(nbuf_Schema *msg, struct nbuf *buf, size_t offset)
 }
 
 static inline size_t
-nbuf_alloc_Schema(nbuf_Schema *msg, struct nbuf *buf)
+nbuf_alloc_Schema(nbuf_Schema *msg, struct nbuf_buf *buf)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -45,7 +45,7 @@ nbuf_alloc_Schema(nbuf_Schema *msg, struct nbuf *buf)
 }
 
 static inline size_t
-nbuf_alloc_multi_Schema(nbuf_Schema *msg, struct nbuf *buf, size_t n)
+nbuf_alloc_multi_Schema(nbuf_Schema *msg, struct nbuf_buf *buf, size_t n)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -60,7 +60,7 @@ typedef struct nbuf_EnumDef_ {
 extern const struct nbuf_MsgDef_ nbuf_refl_EnumDef;
 
 static inline size_t
-nbuf_get_EnumDef(nbuf_EnumDef *msg, struct nbuf *buf, size_t offset)
+nbuf_get_EnumDef(nbuf_EnumDef *msg, struct nbuf_buf *buf, size_t offset)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -69,7 +69,7 @@ nbuf_get_EnumDef(nbuf_EnumDef *msg, struct nbuf *buf, size_t offset)
 }
 
 static inline size_t
-nbuf_alloc_EnumDef(nbuf_EnumDef *msg, struct nbuf *buf)
+nbuf_alloc_EnumDef(nbuf_EnumDef *msg, struct nbuf_buf *buf)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -79,7 +79,7 @@ nbuf_alloc_EnumDef(nbuf_EnumDef *msg, struct nbuf *buf)
 }
 
 static inline size_t
-nbuf_alloc_multi_EnumDef(nbuf_EnumDef *msg, struct nbuf *buf, size_t n)
+nbuf_alloc_multi_EnumDef(nbuf_EnumDef *msg, struct nbuf_buf *buf, size_t n)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -94,7 +94,7 @@ typedef struct nbuf_EnumVal_ {
 extern const struct nbuf_MsgDef_ nbuf_refl_EnumVal;
 
 static inline size_t
-nbuf_get_EnumVal(nbuf_EnumVal *msg, struct nbuf *buf, size_t offset)
+nbuf_get_EnumVal(nbuf_EnumVal *msg, struct nbuf_buf *buf, size_t offset)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -103,7 +103,7 @@ nbuf_get_EnumVal(nbuf_EnumVal *msg, struct nbuf *buf, size_t offset)
 }
 
 static inline size_t
-nbuf_alloc_EnumVal(nbuf_EnumVal *msg, struct nbuf *buf)
+nbuf_alloc_EnumVal(nbuf_EnumVal *msg, struct nbuf_buf *buf)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -113,7 +113,7 @@ nbuf_alloc_EnumVal(nbuf_EnumVal *msg, struct nbuf *buf)
 }
 
 static inline size_t
-nbuf_alloc_multi_EnumVal(nbuf_EnumVal *msg, struct nbuf *buf, size_t n)
+nbuf_alloc_multi_EnumVal(nbuf_EnumVal *msg, struct nbuf_buf *buf, size_t n)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -128,7 +128,7 @@ typedef struct nbuf_MsgDef_ {
 extern const struct nbuf_MsgDef_ nbuf_refl_MsgDef;
 
 static inline size_t
-nbuf_get_MsgDef(nbuf_MsgDef *msg, struct nbuf *buf, size_t offset)
+nbuf_get_MsgDef(nbuf_MsgDef *msg, struct nbuf_buf *buf, size_t offset)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -137,7 +137,7 @@ nbuf_get_MsgDef(nbuf_MsgDef *msg, struct nbuf *buf, size_t offset)
 }
 
 static inline size_t
-nbuf_alloc_MsgDef(nbuf_MsgDef *msg, struct nbuf *buf)
+nbuf_alloc_MsgDef(nbuf_MsgDef *msg, struct nbuf_buf *buf)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -147,7 +147,7 @@ nbuf_alloc_MsgDef(nbuf_MsgDef *msg, struct nbuf *buf)
 }
 
 static inline size_t
-nbuf_alloc_multi_MsgDef(nbuf_MsgDef *msg, struct nbuf *buf, size_t n)
+nbuf_alloc_multi_MsgDef(nbuf_MsgDef *msg, struct nbuf_buf *buf, size_t n)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -162,7 +162,7 @@ typedef struct nbuf_FieldDef_ {
 extern const struct nbuf_MsgDef_ nbuf_refl_FieldDef;
 
 static inline size_t
-nbuf_get_FieldDef(nbuf_FieldDef *msg, struct nbuf *buf, size_t offset)
+nbuf_get_FieldDef(nbuf_FieldDef *msg, struct nbuf_buf *buf, size_t offset)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -171,7 +171,7 @@ nbuf_get_FieldDef(nbuf_FieldDef *msg, struct nbuf *buf, size_t offset)
 }
 
 static inline size_t
-nbuf_alloc_FieldDef(nbuf_FieldDef *msg, struct nbuf *buf)
+nbuf_alloc_FieldDef(nbuf_FieldDef *msg, struct nbuf_buf *buf)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;
@@ -181,7 +181,7 @@ nbuf_alloc_FieldDef(nbuf_FieldDef *msg, struct nbuf *buf)
 }
 
 static inline size_t
-nbuf_alloc_multi_FieldDef(nbuf_FieldDef *msg, struct nbuf *buf, size_t n)
+nbuf_alloc_multi_FieldDef(nbuf_FieldDef *msg, struct nbuf_buf *buf, size_t n)
 {
 	struct nbuf_obj *o = NBUF_OBJ(*msg);
 	o->buf = buf;

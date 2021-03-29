@@ -144,7 +144,7 @@ typedef uint32_t nbuf_word_off_t;
 
 
 /** Buffer API */
-struct nbuf {
+struct nbuf_buf {
 	char *base;
 	size_t len, cap;
 };
@@ -153,7 +153,7 @@ struct nbuf {
  * The buffer will not own memory.
  * It's undefined behavior if mutable API is used with read-only buffers.
  */
-static inline void nbuf_init_ro(struct nbuf *buf, const char *base, size_t len)
+static inline void nbuf_init_ro(struct nbuf_buf *buf, const char *base, size_t len)
 {
 	buf->base = (char *) base;
 	buf->len = len;
@@ -167,14 +167,14 @@ static inline void nbuf_init_ro(struct nbuf *buf, const char *base, size_t len)
  *
  * Returns NULL on failure.
  */
-char *nbuf_init_rw(struct nbuf *buf, size_t cap);
+char *nbuf_init_rw(struct nbuf_buf *buf, size_t cap);
 
 /* Clears a read-write buffer.
  * This frees the memory owned by the buffer.
  */
-void nbuf_clear(struct nbuf *buf);
+void nbuf_clear(struct nbuf_buf *buf);
 
-char *nbuf_alloc_ex(struct nbuf *buf, size_t newlen);
+char *nbuf_alloc_ex(struct nbuf_buf *buf, size_t newlen);
 
 /* Allocates `size` bytes at the end of the buffer.
  * This may reallocate memory.  Any pointer pointing to
@@ -183,7 +183,7 @@ char *nbuf_alloc_ex(struct nbuf *buf, size_t newlen);
  * Returns a pointer at the beginning of the newly allocated
  * memory region, or NULL on failure.
  */
-static inline char *nbuf_alloc(struct nbuf *buf, size_t size)
+static inline char *nbuf_alloc(struct nbuf_buf *buf, size_t size)
 {
 	size_t newlen;
 	char *newbase;
@@ -200,7 +200,7 @@ static inline char *nbuf_alloc(struct nbuf *buf, size_t size)
  * `align` must be a power of 2.
  */
 static inline char *
-nbuf_alloc_aligned(struct nbuf *buf, size_t size, size_t align)
+nbuf_alloc_aligned(struct nbuf_buf *buf, size_t size, size_t align)
 {
 	size_t pad;
 	char *p;
@@ -216,7 +216,7 @@ nbuf_alloc_aligned(struct nbuf *buf, size_t size, size_t align)
 /* Appends `len` bytes, starting at `s`, to the end of the buffer.
  */
 static inline char *
-nbuf_add(struct nbuf *buf, const char *s, size_t len)
+nbuf_add(struct nbuf_buf *buf, const char *s, size_t len)
 {
 	char *p = nbuf_alloc(buf, len);
 	if (!p) return NULL;
@@ -227,7 +227,7 @@ nbuf_add(struct nbuf *buf, const char *s, size_t len)
 /* Appends a single byte `c` into buffer.
  */
 static inline char *
-nbuf_add1(struct nbuf *buf, char c)
+nbuf_add1(struct nbuf_buf *buf, char c)
 {
 	char *p = nbuf_alloc(buf, 1);
 	if (!p) return NULL;
@@ -271,7 +271,7 @@ nbuf_add1(struct nbuf *buf, char c)
  */
 
 struct nbuf_obj {
-	struct nbuf *buf;
+	struct nbuf_buf *buf;
 	uint32_t offset;
 	uint16_t ssize, psize;
 };
@@ -462,7 +462,7 @@ nbuf_resize_arr(struct nbuf_obj *o, nbuf_word_t len);
  * fields, since they may need to allocate.
  */
 size_t
-nbuf_fix_arr(struct nbuf_obj *o, nbuf_word_t len, const struct nbuf *newbuf);
+nbuf_fix_arr(struct nbuf_obj *o, nbuf_word_t len, const struct nbuf_buf *newbuf);
 
 /* Allocates a string.
  *

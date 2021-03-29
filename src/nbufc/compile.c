@@ -53,13 +53,13 @@ static void dtor_FileState(struct FileState *fs)
 struct ctx {
 	size_t depth;
 	Token token;
-	struct nbuf *file_states;  // struct FileState
+	struct nbuf_buf *file_states;  // struct FileState
 
 	// parsing state of current file.
-	struct nbuf scratch_buf;
-	struct nbuf typenames;
-	struct nbuf bufs[MAX_BUFFER];
-	struct nbuf *buf;
+	struct nbuf_buf scratch_buf;
+	struct nbuf_buf typenames;
+	struct nbuf_buf bufs[MAX_BUFFER];
+	struct nbuf_buf *buf;
 };
 
 #define NEXT_BUF (assert(ctx->buf < ctx->bufs + MAX_BUFFER), ctx->buf++)
@@ -78,7 +78,7 @@ parse_file(struct ctx *ctx, const char *filename, size_t filename_len);
 static char *
 parse_strcat(struct ctx *ctx, lexState *l)
 {
-	struct nbuf *buf = &ctx->scratch_buf;
+	struct nbuf_buf *buf = &ctx->scratch_buf;
 
 	EXPECT(STR);
 	buf->len = 0;
@@ -105,7 +105,7 @@ static char *
 parse_fqn(struct ctx *ctx, lexState *l)
 {
 	size_t len = 0;
-	struct nbuf *buf = &ctx->scratch_buf;
+	struct nbuf_buf *buf = &ctx->scratch_buf;
 
 	buf->len = 0;
 	for (;;) {
@@ -157,7 +157,7 @@ err:
 
 // import_stmts := { "import" { STR } ";" }
 static bool
-parse_import(struct ctx *ctx, lexState *l, struct nbuf *imports)
+parse_import(struct ctx *ctx, lexState *l, struct nbuf_buf *imports)
 {
 	while (IS_ID("import")) {
 		struct nbuf_schema_set **p;
@@ -238,7 +238,7 @@ parse_field_defs(struct ctx *ctx, lexState *l, nbuf_MsgDef mdef)
 	size_t count = 0;
 	nbuf_FieldDef fdef;
 	bool rc = false;
-	struct nbuf *oldbuf = ctx->buf;
+	struct nbuf_buf *oldbuf = ctx->buf;
 
 	while (IS(ID)) {
 		struct nbuf_obj o;
@@ -321,7 +321,7 @@ parse_message_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 	size_t count = 0;
 	nbuf_MsgDef mdef;
 	bool rc = false;
-	struct nbuf *oldbuf = ctx->buf;
+	struct nbuf_buf *oldbuf = ctx->buf;
 
 	while (IS_ID("message")) {
 		struct nbuf_obj o;
@@ -374,7 +374,7 @@ parse_enum_vals(struct ctx *ctx, lexState *l, nbuf_EnumDef edef, long *value)
 	size_t count = 0;
 	nbuf_EnumVal eval;
 	bool rc = false;
-	struct nbuf *oldbuf = ctx->buf;
+	struct nbuf_buf *oldbuf = ctx->buf;
 
 	EXPECT(ID);
 	do {
@@ -442,7 +442,7 @@ parse_enum_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 	nbuf_EnumDef edef;
 	bool rc = false;
 	long value = 0;
-	struct nbuf *oldbuf = ctx->buf;
+	struct nbuf_buf *oldbuf = ctx->buf;
 
 	while (IS_ID("enum")) {
 		struct nbuf_obj o;
@@ -580,9 +580,9 @@ parse_file(struct ctx *ctx, const char *filename, size_t filename_len)
 	lexState l[1];
 	struct FileId file_id;
 	nbuf_Schema schema;
-	struct nbuf textschema;  // load_file
-	struct nbuf binschema;
-	struct nbuf imports;
+	struct nbuf_buf textschema;  // load_file
+	struct nbuf_buf binschema;
+	struct nbuf_buf imports;
 	bool rc = false;
 	struct nbuf_schema_set *ss = NULL;
 	struct FileState *fs = NULL;

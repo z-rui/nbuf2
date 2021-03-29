@@ -5,8 +5,8 @@
 #include <stdlib.h>
 
 struct ctx {
-	struct nbuf *buf;
-	struct nbuf strbuf;
+	struct nbuf_buf *buf;
+	struct nbuf_buf strbuf;
 	lexState l[1];
 	Token token;
 	int depth, max_depth;
@@ -214,7 +214,7 @@ parse_repeated_field(struct ctx *ctx, struct nbuf_obj *o, const char *fname,
 		const nbuf_MsgDef *mdef;
 		const nbuf_EnumDef *edef;
 	} u = { typespec };
-	struct nbuf newbuf = {NULL}, *oldbuf = ctx->buf;
+	struct nbuf_buf newbuf = {NULL}, *oldbuf = ctx->buf;
 	struct nbuf_obj oo, it = {ctx->buf};
 	size_t count = 0;
 	bool rc = false;

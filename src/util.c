@@ -18,7 +18,7 @@
 
 
 #if _POSIX_C_SOURCE || defined _WIN32
-static size_t nbuf_load_fd_read(struct nbuf *buf, int fd)
+static size_t nbuf_load_fd_read(struct nbuf_buf *buf, int fd)
 {
 	size_t readsz;
 	ssize_t n;
@@ -47,7 +47,7 @@ err:
 #endif
 
 #if _POSIX_C_SOURCE || defined _WIN32
-size_t nbuf_load_fd(struct nbuf *buf, int fd)
+size_t nbuf_load_fd(struct nbuf_buf *buf, int fd)
 {
 #ifdef _WIN32
 	struct _stat statbuf;
@@ -87,7 +87,7 @@ size_t nbuf_load_fd(struct nbuf *buf, int fd)
 }
 #endif
 
-size_t nbuf_load_fp(struct nbuf *buf, FILE *f)
+size_t nbuf_load_fp(struct nbuf_buf *buf, FILE *f)
 {
 #if _POSIX_C_SOURCE
 	return nbuf_load_fd(buf, fileno(f));
@@ -111,7 +111,7 @@ err:
 	return buf->len;
 }
 
-size_t nbuf_load_file(struct nbuf *buf, const char *filename)
+size_t nbuf_load_file(struct nbuf_buf *buf, const char *filename)
 {
 	FILE *f;
 	size_t rc = 0;
@@ -126,7 +126,7 @@ size_t nbuf_load_file(struct nbuf *buf, const char *filename)
 	return rc;
 }
 
-void nbuf_unload_file(struct nbuf *buf)
+void nbuf_unload_file(struct nbuf_buf *buf)
 {
 #if _POSIX_MAPPED_FILES
 	if (buf->base != NULL && buf->cap == 0) {
@@ -141,7 +141,7 @@ void nbuf_unload_file(struct nbuf *buf)
 }
 
 #if _POSIX_C_SOURCE || defined _WIN32
-size_t nbuf_save_fd(struct nbuf *buf, int fd)
+size_t nbuf_save_fd(struct nbuf_buf *buf, int fd)
 {
 	if (write(fd, buf->base, buf->len) != buf->len) {
 		perror("write");
@@ -151,7 +151,7 @@ size_t nbuf_save_fd(struct nbuf *buf, int fd)
 }
 #endif
 
-size_t nbuf_save_fp(struct nbuf *buf, FILE *f)
+size_t nbuf_save_fp(struct nbuf_buf *buf, FILE *f)
 {
 	if (fwrite(buf->base, 1, buf->len, f) != buf->len) {
 		perror("fwrite");
@@ -160,7 +160,7 @@ size_t nbuf_save_fp(struct nbuf *buf, FILE *f)
 	return buf->len;
 }
 
-size_t nbuf_save_file(struct nbuf *buf, const char *filename)
+size_t nbuf_save_file(struct nbuf_buf *buf, const char *filename)
 {
 	FILE *f;
 	int rc = 0;
@@ -179,7 +179,7 @@ size_t nbuf_save_file(struct nbuf *buf, const char *filename)
 	return rc;
 }
 
-size_t nbuf_unescape(struct nbuf *buf, const char *s, size_t len)
+size_t nbuf_unescape(struct nbuf_buf *buf, const char *s, size_t len)
 {
 	size_t oldlen = buf->len;
 	const char *end = s + len;

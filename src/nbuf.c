@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 char *
-nbuf_init_rw(struct nbuf *buf, size_t cap)
+nbuf_init_rw(struct nbuf_buf *buf, size_t cap)
 {
 	if (cap == 0)
 		cap = 1;
@@ -19,7 +19,7 @@ nbuf_init_rw(struct nbuf *buf, size_t cap)
 	return buf->base;
 }
 
-void nbuf_clear(struct nbuf *buf)
+void nbuf_clear(struct nbuf_buf *buf)
 {
 	if (buf->cap)
 		free(buf->base);
@@ -27,7 +27,7 @@ void nbuf_clear(struct nbuf *buf)
 	buf->len = buf->cap = 0;
 }
 
-char *nbuf_alloc_ex(struct nbuf *buf, size_t newlen)
+char *nbuf_alloc_ex(struct nbuf_buf *buf, size_t newlen)
 {
 	size_t newcap;
 	char *newbase;
@@ -54,7 +54,7 @@ char *nbuf_alloc_ex(struct nbuf *buf, size_t newlen)
 
 size_t
 nbuf_fix_arr(struct nbuf_obj *o, nbuf_word_t len,
-	const struct nbuf *newbuf)
+	const struct nbuf_buf *newbuf)
 {
 	nbuf_word_t *p = NULL;
 	struct nbuf_obj it = *o;
