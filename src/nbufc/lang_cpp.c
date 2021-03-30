@@ -139,14 +139,14 @@ static void out_scalar_field(struct ctx *ctx, const char *msg_name, const char *
 	if (repeated) {
 		if (ctx->pass == 0) {
 			// Getter.
-			fprintf(f, "\tauto %s() {\n", fname);
+			fprintf(f, "\t::nbuf::scalar_array<const ::nbuf::scalar<%s>> %s() {\n", typenam, fname);
 			fprintf(f, "\t::nbuf::object o;\n"
 				"size_t n = ::nbuf::object::pointer_field(&o, %u);\n", offset);
 			fprintf(f, "\t\treturn ::nbuf::scalar_array<const ::nbuf::scalar<%s>>(o, n);\n"
 				"\t}\n", typenam);
 		} else if (ctx->pass == 1) {
 			// Allocator.
-			fprintf(f, "\tauto alloc_%s(size_t n) {\n", fname);
+			fprintf(f, "\t::nbuf::scalar_array<::nbuf::scalar<%s>> alloc_%s(size_t n) {\n", typenam, fname);
 			fprintf(f, "\t\tauto o = ::nbuf::scalar_array<::nbuf::scalar<%s>>::alloc(buf, n);\n"
 				"\t\tif (o) ::nbuf::object::set_pointer_field(%u, o);\n"
 				"\t\treturn o;\n"

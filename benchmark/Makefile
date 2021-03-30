@@ -23,7 +23,7 @@ benchmarkpp: benchmarkpp.o
 benchmark.o: benchmark.c benchmark.nb.h
 
 benchmarkpp.o: benchmark.cc benchmark.nb.hpp
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CXX) $(CFLAGS) -c -o $@ $<
 
 %.nb.h %.nb.c: %.nbuf
 	$(NBUFC) -c_out $<

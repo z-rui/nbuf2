@@ -14,7 +14,7 @@ namespace nbuf {
 
 using buffer = ::nbuf_buf;
 
-template <typename T, typename std::enable_if<std::is_scalar<T>::value, size_t>::type sz = sizeof (T)>
+template <typename T, size_t sz = sizeof (T)>
 struct scalar;
 
 template <typename T>
