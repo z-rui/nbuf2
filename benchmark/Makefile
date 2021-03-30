@@ -4,7 +4,7 @@ CXXFLAGS=$(CFLAGS)
 LDFLAGS=$(SYS_LDFLAGS)
 
 TARGETS=benchmark
-TARGETS=benchmarkpp
+TARGETS+=benchmarkpp
 TARGETS+=benchmark_pb  # Protocol Buffers
 TARGETS+=benchmark_fb  # Flatbuffers
 TARGETS+=benchmark_cp  # Cap'n Proto

@@ -12,6 +12,7 @@ static void create_serialize(struct nbuf_buf *buf)
 	Root root;
 	Entry entry;
 
+	memset(buf->base, 0, buf->len);
 	buf->len = 0;
 	alloc_Root(&root, buf);
 	Root_alloc_entries(&entry, root, MAX_ENTRY);
@@ -83,6 +84,7 @@ static void parse_text_format(struct nbuf_buf *in, struct nbuf_buf *out)
 	struct nbuf_parse_opt opt = { .outbuf = out, .filename = "benchmark.nb.txt" };
 	struct nbuf_obj o;
 
+	memset(out->base, 0, out->len);
 	out->len = 0;
 	nbuf_parse(&opt, &o, in->base, in->len, refl_Root);
 }
