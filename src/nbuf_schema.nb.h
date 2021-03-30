@@ -261,7 +261,7 @@ nbuf_Schema_set_raw_enums(nbuf_Schema msg, const struct nbuf_obj *o)
 }
 
 static inline size_t
-nbuf_Schema_enums(struct nbuf_EnumDef_ *field, nbuf_Schema msg, size_t i)
+nbuf_Schema_enums(nbuf_EnumDef *field, nbuf_Schema msg, size_t i)
 {
 	struct nbuf_obj *o = (struct nbuf_obj *) field;
 	size_t n = nbuf_Schema_raw_enums(o, msg);
@@ -276,7 +276,7 @@ nbuf_Schema_enums_size(nbuf_Schema msg)
 }
 
 static inline size_t
-nbuf_Schema_alloc_enums(struct nbuf_EnumDef_ *field, nbuf_Schema msg, size_t n)
+nbuf_Schema_alloc_enums(nbuf_EnumDef *field, nbuf_Schema msg, size_t n)
 {
 	return nbuf_alloc_multi_EnumDef(field, NBUF_OBJ(msg)->buf, n) ? 
 		nbuf_Schema_set_raw_enums(msg, (struct nbuf_obj *) field) : 0;
@@ -295,7 +295,7 @@ nbuf_Schema_set_raw_messages(nbuf_Schema msg, const struct nbuf_obj *o)
 }
 
 static inline size_t
-nbuf_Schema_messages(struct nbuf_MsgDef_ *field, nbuf_Schema msg, size_t i)
+nbuf_Schema_messages(nbuf_MsgDef *field, nbuf_Schema msg, size_t i)
 {
 	struct nbuf_obj *o = (struct nbuf_obj *) field;
 	size_t n = nbuf_Schema_raw_messages(o, msg);
@@ -310,7 +310,7 @@ nbuf_Schema_messages_size(nbuf_Schema msg)
 }
 
 static inline size_t
-nbuf_Schema_alloc_messages(struct nbuf_MsgDef_ *field, nbuf_Schema msg, size_t n)
+nbuf_Schema_alloc_messages(nbuf_MsgDef *field, nbuf_Schema msg, size_t n)
 {
 	return nbuf_alloc_multi_MsgDef(field, NBUF_OBJ(msg)->buf, n) ? 
 		nbuf_Schema_set_raw_messages(msg, (struct nbuf_obj *) field) : 0;
@@ -358,7 +358,7 @@ nbuf_EnumDef_set_raw_values(nbuf_EnumDef msg, const struct nbuf_obj *o)
 }
 
 static inline size_t
-nbuf_EnumDef_values(struct nbuf_EnumVal_ *field, nbuf_EnumDef msg, size_t i)
+nbuf_EnumDef_values(nbuf_EnumVal *field, nbuf_EnumDef msg, size_t i)
 {
 	struct nbuf_obj *o = (struct nbuf_obj *) field;
 	size_t n = nbuf_EnumDef_raw_values(o, msg);
@@ -373,7 +373,7 @@ nbuf_EnumDef_values_size(nbuf_EnumDef msg)
 }
 
 static inline size_t
-nbuf_EnumDef_alloc_values(struct nbuf_EnumVal_ *field, nbuf_EnumDef msg, size_t n)
+nbuf_EnumDef_alloc_values(nbuf_EnumVal *field, nbuf_EnumDef msg, size_t n)
 {
 	return nbuf_alloc_multi_EnumVal(field, NBUF_OBJ(msg)->buf, n) ? 
 		nbuf_EnumDef_set_raw_values(msg, (struct nbuf_obj *) field) : 0;
@@ -465,7 +465,7 @@ nbuf_MsgDef_set_raw_fields(nbuf_MsgDef msg, const struct nbuf_obj *o)
 }
 
 static inline size_t
-nbuf_MsgDef_fields(struct nbuf_FieldDef_ *field, nbuf_MsgDef msg, size_t i)
+nbuf_MsgDef_fields(nbuf_FieldDef *field, nbuf_MsgDef msg, size_t i)
 {
 	struct nbuf_obj *o = (struct nbuf_obj *) field;
 	size_t n = nbuf_MsgDef_raw_fields(o, msg);
@@ -480,7 +480,7 @@ nbuf_MsgDef_fields_size(nbuf_MsgDef msg)
 }
 
 static inline size_t
-nbuf_MsgDef_alloc_fields(struct nbuf_FieldDef_ *field, nbuf_MsgDef msg, size_t n)
+nbuf_MsgDef_alloc_fields(nbuf_FieldDef *field, nbuf_MsgDef msg, size_t n)
 {
 	return nbuf_alloc_multi_FieldDef(field, NBUF_OBJ(msg)->buf, n) ? 
 		nbuf_MsgDef_set_raw_fields(msg, (struct nbuf_obj *) field) : 0;

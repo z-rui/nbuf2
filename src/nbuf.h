@@ -560,7 +560,7 @@ err:
  */
 #include <stdio.h>
 static inline size_t
-nbuf_obj_set_p(struct nbuf_obj *o, size_t index, const struct nbuf_obj *rhs)
+nbuf_obj_set_p(const struct nbuf_obj *o, size_t index, const struct nbuf_obj *rhs)
 {
 	size_t ptr_offset;
 	nbuf_word_t rel_ptr = 0;
