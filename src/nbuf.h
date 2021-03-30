@@ -320,29 +320,39 @@ static inline size_t
 nbuf_get_obj(struct nbuf_obj *o)
 {
 	nbuf_word_t hdr, len;
+	size_t sz, maxsz;
 
-	if (o->offset + sizeof hdr > o->buf->len)
+	if (o->offset >= o->buf->len)
+		goto err;
+	maxsz = o->buf->len - o->offset;
+
+	if ((sz = sizeof hdr) > maxsz)
 		goto err;
 	hdr = nbuf_word(o->buf->base + o->offset);
 	o->offset += sizeof hdr;
 	if (!(hdr & NBUF_HDR_MASK))
-		goto err;  // Bad header.
+		goto err;
 	if (hdr & NBUF_BARR_MASK) {
 		o->ssize = 1;
 		o->psize = 0;
-		return hdr & NBUF_BLEN_MASK;
+		len = hdr & NBUF_BLEN_MASK;
+	} else {
+		o->ssize = NBUF_SSIZE(hdr);
+		o->psize = NBUF_PSIZE(hdr);
+		if (hdr & NBUF_ARR_MASK) {
+			if ((sz += sizeof hdr) > maxsz)
+				goto err;
+			len = nbuf_word(o->buf->base + o->offset);
+			o->offset += sizeof hdr;
+		} else {
+			len = 1;
+		}
 	}
-	o->ssize = NBUF_SSIZE(hdr);
-	o->psize = NBUF_PSIZE(hdr);
-	if (hdr & NBUF_ARR_MASK) {
-		if (o->offset + sizeof hdr > o->buf->len)
-			goto err;
-		len = nbuf_word(o->buf->base + o->offset);
-		o->offset += sizeof hdr;
-		return len;
-	}
-	return 1;
+	if ((sz += len * nbuf_obj_size(o)) > maxsz)
+		goto err;
+	return len;
 err:
+	// Malformed input.
 	o->ssize = o->psize = 0;
 	return 0;
 }
@@ -518,7 +528,9 @@ nbuf_obj_s(const struct nbuf_obj *o, size_t byte_offset, size_t sz)
 {
 	size_t offset = o->offset + o->psize * sizeof (nbuf_word_t) + byte_offset;
 
-	if (byte_offset + sz > o->ssize || offset + sz > o->buf->len)
+	/* Malformed input should have been rejected by nbuf_get_obj */
+	assert(offset + sz <= o->buf->len);
+	if (byte_offset + sz > o->ssize)
 		return NULL;
 	return o->buf->base + offset;
 }
@@ -537,14 +549,15 @@ nbuf_obj_p(struct nbuf_obj *oo, const struct nbuf_obj *o, size_t index)
 	if (index >= o->psize)
 		goto err;
 	ptr_offset = o->offset + index * sizeof (nbuf_word_t);
-	if (ptr_offset + sizeof rel_ptr > o->buf->len)
-		goto err;  /* Malformed input */
+	/* Malformed input should have been rejected by nbuf_get_obj */
+	assert(ptr_offset + sizeof rel_ptr <= o->buf->len);
 	rel_ptr = nbuf_word(o->buf->base + ptr_offset);
 	if (rel_ptr == 0)
 		goto err;
 	oo->offset = ptr_offset + rel_ptr * sizeof (nbuf_word_t);
 	return nbuf_get_obj(oo);
 err:
+	/* null pointer */
 	oo->offset = 0;
 	oo->ssize = oo->psize = 0;
 	return 0;
