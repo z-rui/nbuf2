@@ -14,38 +14,36 @@
 struct ctx {
 	FILE *f;  /* output file */
 	struct nbuf_schema_set *ss;
+	struct nbuf_buf strbuf;
 	nbuf_Schema schema;
 	char *prefix;  /* pre-computed package prefix */
 };
 
-/* Replace non-alphanumeric characters with '_' and append '_' in the end.
- * Exception: "" -> "".
- */
-static char *
-precompute_prefix(const char *pkg_name)
+#pragma GCC visibility push(hidden)
+char *
+nbufc_replace_dots(struct nbuf_buf *buf, const char *pkg_name,
+	const char *replacement)
 {
-	size_t n = strlen(pkg_name);
-	char *prefix;
+	size_t replen = strlen(replacement);
 	const char *s = pkg_name;
-	char *t;
+	bool ok;
 
-	prefix = t = (char *) malloc(n + 3);
-	if (!prefix)
-		return NULL;
-	if (pkg_name[0] == '\0') {
-		prefix[0] = '\0';
-		return prefix;
+	while (*s) {
+		ok = (*s == '.') ?
+			nbuf_add(buf, replacement, replen) :
+			nbuf_add1(buf, *s);
+		if (!ok)
+			return NULL;
+		s++;
 	}
-	if (!isalpha(pkg_name[0]))
-		*t++ = '_';
-	for (s = pkg_name; *s; ++s)
-		*t++ = isalnum(*s) ? *s : '_';
-	*t++ = '_';
-	*t = '\0';
-	return prefix;
+	if (!nbuf_add1(buf, '\0'))
+		return NULL;
+	buf->len--;
+	return buf->base;
 }
 
-static void out_upper_ident(FILE *f, const char *s)
+void
+nbufc_out_upper_ident(FILE *f, const char *s)
 {
 	int c = 0;
 
@@ -58,6 +56,7 @@ static void out_upper_ident(FILE *f, const char *s)
 			putc((c = '_'), f);
 	}
 }
+#pragma GCC visibility pop
 
 static void
 out_enum(struct ctx *ctx, nbuf_EnumDef edef)
@@ -152,18 +151,37 @@ static void out_size(struct ctx *ctx,
 		ctx->prefix, msg_name, fname);
 }
 
+static const char *get_prefix(struct ctx *ctx, const struct nbuf_obj *typedesc)
+{
+	nbuf_Schema schema;
+	const char *pkg_name;
+
+	if (!nbuf_get_Schema(&schema, typedesc->buf, 0)) {
+		fprintf(stderr, "internal error: cannot load schema at %p\n",
+			typedesc->buf->base);
+		return NULL;
+	}
+	pkg_name = nbuf_Schema_pkg_name(schema, NULL);
+	if (!nbufc_replace_dots(&ctx->strbuf, pkg_name, "_"))
+		return NULL;
+	if (ctx->strbuf.len > 0 && !nbuf_add1(&ctx->strbuf, '_'))
+		return NULL;
+	if (!nbuf_add1(&ctx->strbuf, '\0'))
+		return NULL;
+	return ctx->strbuf.base;
+}
+
 static void out_scalar_field(struct ctx *ctx, const char *msg_name, const char *fname,
 	nbuf_Kind kind, unsigned offset, const struct nbuf_obj *typedesc)
 {
 	FILE *f = ctx->f;
 	const char *typenam = NULL;
-	char empty[] = "";
-	char *typenam_prefix = empty;
+	const char *typenam_prefix = "";
 	char qbuf[16];
 	int repeated = nbuf_is_repeated(kind);
 	unsigned sz = typedesc->ssize;
-	nbuf_Schema schema;
 
+	ctx->strbuf.len = 0;
 	kind = nbuf_base_kind(kind);
 	switch (kind) {
 	case nbuf_Kind_BOOL:
@@ -176,13 +194,8 @@ static void out_scalar_field(struct ctx *ctx, const char *msg_name, const char *
 		break;
 	case nbuf_Kind_ENUM:
 		*qbuf = 'i';
-		typenam = nbuf_EnumDef_name(* (const nbuf_EnumDef *) typedesc, NULL);
-		if (!nbuf_get_Schema(&schema, typedesc->buf, 0)) {
-			fprintf(stderr, "internal error: cannot load schema "
-				"for enum %s.\n", typenam);
-			return;
-		}
-		typenam_prefix = precompute_prefix(nbuf_Schema_pkg_name(schema, NULL));
+		typenam = nbuf_EnumDef_name(*(nbuf_EnumDef *) typedesc, NULL);
+		typenam_prefix = get_prefix(ctx, typedesc);
 		sz = 2;
 		break;
 	default:
@@ -243,8 +256,6 @@ static void out_scalar_field(struct ctx *ctx, const char *msg_name, const char *
 		(kind == nbuf_Kind_BOOL) ? "!!" :
 		(kind == nbuf_Kind_ENUM) ? "(int16_t) " : "");
 	fprintf(f, "\treturn p;\n}\n\n");
-	if (typenam_prefix != empty)
-		free(typenam_prefix);
 }
 
 static void out_msg_field(struct ctx *ctx, const char *msg_name, const char *fname,
@@ -252,23 +263,16 @@ static void out_msg_field(struct ctx *ctx, const char *msg_name, const char *fna
 {
 	FILE *f = ctx->f;
 	int repeated = nbuf_is_repeated(kind);
-	nbuf_Schema schema;
-	char *field_prefix;
-	const char *field_typenam;
+	const char *field_prefix, *field_typenam;
 
 	field_typenam = nbuf_MsgDef_name(mdef, NULL);
-	if (!nbuf_get_Schema(&schema, NBUF_OBJ(mdef)->buf, 0)) {
-		fprintf(stderr, "internal error: cannot load schema "
-			"for message %s.\n", field_typenam);
-		return;
-	}
-	field_prefix = precompute_prefix(nbuf_Schema_pkg_name(schema, NULL));
+	field_prefix = get_prefix(ctx, NBUF_OBJ(mdef));
 
 	out_ptr_accessor(ctx, msg_name, fname, offset);
 
 	// Getter.
 	fprintf(f, "static inline size_t\n");
-	fprintf(f, "%s%s_%s(struct %s%s_ *field, %s%s msg%s)\n{\n",
+	fprintf(f, "%s%s_%s(%s%s *field, %s%s msg%s)\n{\n",
 		ctx->prefix, msg_name, fname, field_prefix, field_typenam,
 		ctx->prefix, msg_name, repeated ? ", size_t i" : "");
 	fprintf(f, "\tstruct nbuf_obj *o = (struct nbuf_obj *) field;\n"
@@ -289,7 +293,7 @@ static void out_msg_field(struct ctx *ctx, const char *msg_name, const char *fna
 
 	// Allocator.
 	fprintf(f, "static inline size_t\n");
-	fprintf(f, "%s%s_alloc_%s(struct %s%s_ *field, %s%s msg%s)\n{\n",
+	fprintf(f, "%s%s_alloc_%s(%s%s *field, %s%s msg%s)\n{\n",
 		ctx->prefix, msg_name, fname, field_prefix, field_typenam,
 		ctx->prefix, msg_name, repeated ? ", size_t n" : "");
 	fprintf(f, "\treturn %salloc_%s%s(field, NBUF_OBJ(msg)->buf%s) ? \n"
@@ -297,8 +301,6 @@ static void out_msg_field(struct ctx *ctx, const char *msg_name, const char *fna
 		"}\n\n",
 		field_prefix, repeated ? "multi_" : "", field_typenam,
 		repeated ? ", n" : "", ctx->prefix, msg_name, fname);
-
-	free(field_prefix);
 }
 
 static void out_str_field(struct ctx *ctx, const char *msg_name, const char *fname,
@@ -499,9 +501,18 @@ int nbufc_codegen_c(const struct nbufc_codegen_opt *opt, struct nbuf_schema_set 
 	memset(ctx, 0, sizeof ctx);
 	if (!nbuf_get_Schema(&ctx->schema, &ss->buf, 0))
 		goto err;
-	ctx->prefix = precompute_prefix(nbuf_Schema_pkg_name(ctx->schema, NULL));
+	ctx->prefix = nbufc_replace_dots(&ctx->strbuf,
+		nbuf_Schema_pkg_name(ctx->schema, NULL), "_");
 	if (!ctx->prefix)
 		goto err;
+	if (ctx->strbuf.len > 0 && !nbuf_add(&ctx->strbuf, "_", 2)) {
+		ctx->prefix = NULL;
+		goto err;
+	} else {
+		ctx->prefix = ctx->strbuf.base;
+	}
+	/* steal buffer */
+	memset(&ctx->strbuf, 0, sizeof ctx->strbuf);
 	ctx->ss = ss;
 
 	src_name = nbuf_Schema_src_name(ctx->schema, NULL);
@@ -525,9 +536,9 @@ int nbufc_codegen_c(const struct nbufc_codegen_opt *opt, struct nbuf_schema_set 
 		" * source: %s\n"
 		" */\n\n", src_name);
 	fprintf(f, "#ifndef ");
-	out_upper_ident(f, out_filename);
+	nbufc_out_upper_ident(f, out_filename);
 	fprintf(f, "_\n#define ");
-	out_upper_ident(f, out_filename);
+	nbufc_out_upper_ident(f, out_filename);
 	fprintf(f, "_\n\n");
 	fprintf(f, "#include \"nbuf.h\"\n");
 
@@ -536,7 +547,7 @@ int nbufc_codegen_c(const struct nbufc_codegen_opt *opt, struct nbuf_schema_set 
 
 	/* Epilogue */
 	fprintf(f, "#endif  /* ");
-	out_upper_ident(f, out_filename);
+	nbufc_out_upper_ident(f, out_filename);
 	fprintf(f, "_ */\n");
 
 	rc = ferror(f);
@@ -570,6 +581,7 @@ int nbufc_codegen_c(const struct nbufc_codegen_opt *opt, struct nbuf_schema_set 
 	fclose(f);
 	fprintf(stderr, "%s%s\n", rc ? "error generating " : "", out_filename);
 err:
+	nbuf_clear(&ctx->strbuf);
 	free(out_filename);
 	free(ctx->prefix);
 	return rc;
