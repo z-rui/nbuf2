@@ -4,6 +4,7 @@ CXXFLAGS=$(CFLAGS)
 LDFLAGS=$(SYS_LDFLAGS)
 
 TARGETS=benchmark
+TARGETS=benchmarkpp
 TARGETS+=benchmark_pb  # Protocol Buffers
 TARGETS+=benchmark_fb  # Flatbuffers
 TARGETS+=benchmark_cp  # Cap'n Proto
@@ -16,10 +17,19 @@ clean:
 benchmark: benchmark.o benchmark.nb.o
 	$(CC) $(LDFLAGS) -o $@ $^ -lnbuf
 
+benchmarkpp: benchmarkpp.o
+	$(CXX) $(LDFLAGS) -o $@ $^ -lnbuf
+
 benchmark.o: benchmark.c benchmark.nb.h
+
+benchmarkpp.o: benchmark.cc benchmark.nb.hpp
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 %.nb.h %.nb.c: %.nbuf
 	$(NBUFC) -c_out $<
+
+%.nb.hpp: %.nbuf
+	$(NBUFC) -cpp_out $<
 
 benchmark_pb: benchmark_pb.o benchmark.pb.o
 	$(CXX) $(LDFLAGS) -o $@ $^ -lprotobuf

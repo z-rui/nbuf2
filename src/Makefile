@@ -12,7 +12,7 @@ ifeq ($(OS), Windows_NT)
 else
 	LIBS+=libnbuf.$(SHLIB_EXT)
 endif
-HDRS=nbuf.h libnbuf.h nbuf_schema.nb.h
+HDRS=nbuf.h nbuf.hpp libnbuf.h nbuf_schema.nb.h
 
 
 all: $(LIBS)
