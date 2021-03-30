@@ -58,6 +58,15 @@ c_out(struct ctx *ctx, const char *path)
 }
 
 static int
+cpp_out(struct ctx *ctx, const char *path)
+{
+	struct nbufc_codegen_opt opt;
+
+	memset(&opt, 0, sizeof opt);
+	return nbufc_codegen_cpp(&opt, ctx->ss);
+}
+
+static int
 bin_out(struct ctx *ctx, const char *path)
 {
 	char *newpath;
@@ -180,7 +189,7 @@ int main(int argc, char *argv[])
 	const char *arg;
 	const char *msg_type = NULL;
 	enum {
-		NONE, C_OUT, BIN_OUT, DECODE, DECODE_RAW, ENCODE,
+		NONE, C_OUT, CPP_OUT, BIN_OUT, DECODE, DECODE_RAW, ENCODE,
 	} action = NONE;
 	struct nbuf_buf outbuf = {NULL};
 	struct nbufc_compile_opt opt = {
@@ -198,6 +207,10 @@ int main(int argc, char *argv[])
 			goto end_of_opt;
 		if (strcmp(arg, "c_out") == 0) {
 			action = C_OUT;
+			break;
+		}
+		if (strcmp(arg, "cpp_out") == 0) {
+			action = CPP_OUT;
 			break;
 		} else if (strcmp(arg, "bin_out") == 0) {
 			action = BIN_OUT;
@@ -242,6 +255,9 @@ skip_schema:
 	switch (action) {
 	case C_OUT:
 		rc = c_out(ctx, arg);
+		break;
+	case CPP_OUT:
+		rc = cpp_out(ctx, arg);
 		break;
 	case BIN_OUT:
 		rc = bin_out(ctx, arg);

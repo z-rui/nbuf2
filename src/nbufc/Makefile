@@ -21,7 +21,9 @@ install: all
 	cp $(BINS) $(PREFIX)/bin
 	cp libnbufc.h $(PREFIX)/include
 
-OBJS=raw.o lang_c.o compile.o util.o
+OBJS=raw.o compile.o util.o
+OBJS+=lang_c.o
+OBJS+=lang_cpp.o
 
 clean:
 	rm -f *.o
