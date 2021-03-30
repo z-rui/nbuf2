@@ -51,9 +51,9 @@ static void out_struct(struct ctx *ctx, nbuf_MsgDef mdef)
 		fprintf(f, "struct %s {\n"
 			"\tstruct reader;\n"
 			"\tstruct writer;\n", name);
-		fprintf(f, "\tstatic reader get(::nbuf::buffer *buf, size_t offset = 0);\n");
-		fprintf(f, "\tstatic writer alloc(::nbuf::buffer *buf);\n");
-		fprintf(f, "\tstatic ::nbuf::pointer_array<writer> alloc(::nbuf::buffer *buf, size_t n);\n");
+		fprintf(f, "\tstatic inline reader get(::nbuf::buffer *buf, size_t offset = 0);\n");
+		fprintf(f, "\tstatic inline writer alloc(::nbuf::buffer *buf);\n");
+		fprintf(f, "\tstatic inline ::nbuf::pointer_array<writer> alloc(::nbuf::buffer *buf, size_t n);\n");
 		fprintf(f, "};\n\n");
 	} else if (ctx->pass == 2) {
 		ssize = nbuf_MsgDef_ssize(mdef);

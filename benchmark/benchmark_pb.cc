@@ -54,9 +54,11 @@ static void use(const Root &root)
 		assert(entry.id() == (int) i);
 		if (i % 5 == 0)
 			assert(entry.pi() == 3.14159265358979323846 + i);
-		if (i % 7 == 0)
+		if (i % 7 == 0) {
+			auto coord = entry.coordinates();
 			for (size_t j = 0; j < 3; j++)
-				assert(entry.coordinates(j) == vec[j]);
+				assert(coord[j] == vec[j]);
+		}
 		if (i % 2 == 0)
 			assert(entry.msg().size() == strlen("100 bottles on the wall"));
 		i++;

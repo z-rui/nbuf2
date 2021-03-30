@@ -15,23 +15,24 @@
 static void create_serialize(capnp::MessageBuilder *builder)
 {
 	static const float vec[3] = { 3.141, 2.718, 1.618 };
+	size_t i = 0;
 
 	auto root = builder->initRoot<Root>();
 	auto entries = root.initEntries(MAX_ENTRY);
-	for (size_t i = 0; i < MAX_ENTRY; i++) {
-		auto entry = entries[i];
+	for (auto entry : entries) {
 		if (i % 3 == 0)
 			entry.setMagic(0xDEADBEEFull * i);
 		entry.setId(i);
 		if (i % 5 == 0)
 			entry.setPi(3.14159265358979323846 + i);
 		if (i % 7 == 0) {
-			auto coordinates = entry.initCoordinates(3);
+			auto coord = entry.initCoordinates(3);
 			for (size_t j = 0; j < 3; j++)
-				coordinates.set(j, vec[j]);
+				coord.set(j, vec[j]);
 		}
 		if (i % 2 == 0)
 			entry.setMsg("100 bottles on the wall");
+		i++;
 	}
 }
 
@@ -48,9 +49,9 @@ static void deserialize_use(capnp::MessageBuilder &builder)
 		if (i % 5 == 0)
 			assert(entry.getPi() == 3.14159265358979323846 + i);
 		if (i % 7 == 0) {
-			auto coordinates = entry.getCoordinates();
+			auto coord = entry.getCoordinates();
 			for (size_t j = 0; j < 3; j++)
-				assert(coordinates[j] == vec[j]);
+				assert(coord[j] == vec[j]);
 		}
 		if (i % 2 == 0)
 			assert(entry.getMsg().size() == strlen("100 bottles on the wall"));
