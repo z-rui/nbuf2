@@ -132,7 +132,7 @@ parse_enum(struct ctx *ctx, void *ptr, nbuf_EnumDef edef)
 	nbuf_EnumVal eval;
 
 	if (IS(INT))
-		return parse_scalar(ctx, ptr, nbuf_Kind_SINT, 1);
+		return parse_scalar(ctx, ptr, nbuf_Kind_SINT, /*size=*/2);
 	EXPECT(ID);
 	if (!nbuf_EnumVal_from_symbol(&eval, edef,
 			TOKEN(ctx->l), TOKENLEN(ctx->l))) {
