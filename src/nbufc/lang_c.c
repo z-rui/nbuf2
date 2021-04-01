@@ -328,25 +328,28 @@ static void out_str_field(struct ctx *ctx, const char *msg_name, const char *fna
 		out_size(ctx, msg_name, fname);
 
 	// Setter.
-	fprintf(f, "static inline size_t\n");
+	fprintf(f, "static inline char *\n");
 	fprintf(f, "%s%s_set_%s(%s%s msg%s, const char *str, size_t len)\n{\n",
 		ctx->prefix, msg_name, fname, ctx->prefix, msg_name,
 		repeated ? ", size_t i" : "");
 	fprintf(f, "\tstruct nbuf_obj o = {NBUF_OBJ(msg)->buf}%s;\n",
 		repeated ? ", oo" : "");
+	fprintf(f, "\tchar *p;\n");
 	if (repeated)
 		fprintf(f, "\tif (%s%s_raw_%s(&oo, msg) <= i)\n"
 			"\t\treturn 0;\n"
 			"\tnbuf_advance(&oo, i);\n",
 			ctx->prefix, msg_name, fname);
-	fprintf(f, "\tif (!nbuf_alloc_str(&o, str, len))\n"
-		"\t\treturn 0;\n");
+	fprintf(f, "\tif (!(p = nbuf_alloc_str(&o, str, len)))\n"
+		"\t\treturn NULL;\n");
 	if (repeated)
-		fprintf(f, "\tnbuf_obj_set_p(&oo, 0, &o);\n");
+		fprintf(f, "\tif (!nbuf_obj_set_p(&oo, 0, &o))\n");
 	else
-		fprintf(f, "\treturn %s%s_set_raw_%s(msg, &o);\n",
+		fprintf(f, "\tif (!%s%s_set_raw_%s(msg, &o))\n",
 			ctx->prefix, msg_name, fname);
-	fprintf(f, "}\n\n");
+	fprintf(f, "\t\treturn NULL;\n"
+		"\treturn p;\n"
+		"}\n\n");
 
 	if (repeated) {
 		// Allocator.

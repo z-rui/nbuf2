@@ -210,13 +210,16 @@ nbuf_Schema_pkg_name(nbuf_Schema msg, size_t *lenp)
 	return nbuf_obj2str(&o, n, lenp);
 }
 
-static inline size_t
+static inline char *
 nbuf_Schema_set_pkg_name(nbuf_Schema msg, const char *str, size_t len)
 {
 	struct nbuf_obj o = {NBUF_OBJ(msg)->buf};
-	if (!nbuf_alloc_str(&o, str, len))
-		return 0;
-	return nbuf_Schema_set_raw_pkg_name(msg, &o);
+	char *p;
+	if (!(p = nbuf_alloc_str(&o, str, len)))
+		return NULL;
+	if (!nbuf_Schema_set_raw_pkg_name(msg, &o))
+		return NULL;
+	return p;
 }
 
 static inline size_t
@@ -239,13 +242,16 @@ nbuf_Schema_src_name(nbuf_Schema msg, size_t *lenp)
 	return nbuf_obj2str(&o, n, lenp);
 }
 
-static inline size_t
+static inline char *
 nbuf_Schema_set_src_name(nbuf_Schema msg, const char *str, size_t len)
 {
 	struct nbuf_obj o = {NBUF_OBJ(msg)->buf};
-	if (!nbuf_alloc_str(&o, str, len))
-		return 0;
-	return nbuf_Schema_set_raw_src_name(msg, &o);
+	char *p;
+	if (!(p = nbuf_alloc_str(&o, str, len)))
+		return NULL;
+	if (!nbuf_Schema_set_raw_src_name(msg, &o))
+		return NULL;
+	return p;
 }
 
 static inline size_t
@@ -336,13 +342,16 @@ nbuf_EnumDef_name(nbuf_EnumDef msg, size_t *lenp)
 	return nbuf_obj2str(&o, n, lenp);
 }
 
-static inline size_t
+static inline char *
 nbuf_EnumDef_set_name(nbuf_EnumDef msg, const char *str, size_t len)
 {
 	struct nbuf_obj o = {NBUF_OBJ(msg)->buf};
-	if (!nbuf_alloc_str(&o, str, len))
-		return 0;
-	return nbuf_EnumDef_set_raw_name(msg, &o);
+	char *p;
+	if (!(p = nbuf_alloc_str(&o, str, len)))
+		return NULL;
+	if (!nbuf_EnumDef_set_raw_name(msg, &o))
+		return NULL;
+	return p;
 }
 
 static inline size_t
@@ -399,13 +408,16 @@ nbuf_EnumVal_symbol(nbuf_EnumVal msg, size_t *lenp)
 	return nbuf_obj2str(&o, n, lenp);
 }
 
-static inline size_t
+static inline char *
 nbuf_EnumVal_set_symbol(nbuf_EnumVal msg, const char *str, size_t len)
 {
 	struct nbuf_obj o = {NBUF_OBJ(msg)->buf};
-	if (!nbuf_alloc_str(&o, str, len))
-		return 0;
-	return nbuf_EnumVal_set_raw_symbol(msg, &o);
+	char *p;
+	if (!(p = nbuf_alloc_str(&o, str, len)))
+		return NULL;
+	if (!nbuf_EnumVal_set_raw_symbol(msg, &o))
+		return NULL;
+	return p;
 }
 
 static inline uint16_t
@@ -443,13 +455,16 @@ nbuf_MsgDef_name(nbuf_MsgDef msg, size_t *lenp)
 	return nbuf_obj2str(&o, n, lenp);
 }
 
-static inline size_t
+static inline char *
 nbuf_MsgDef_set_name(nbuf_MsgDef msg, const char *str, size_t len)
 {
 	struct nbuf_obj o = {NBUF_OBJ(msg)->buf};
-	if (!nbuf_alloc_str(&o, str, len))
-		return 0;
-	return nbuf_MsgDef_set_raw_name(msg, &o);
+	char *p;
+	if (!(p = nbuf_alloc_str(&o, str, len)))
+		return NULL;
+	if (!nbuf_MsgDef_set_raw_name(msg, &o))
+		return NULL;
+	return p;
 }
 
 static inline size_t
@@ -536,13 +551,16 @@ nbuf_FieldDef_name(nbuf_FieldDef msg, size_t *lenp)
 	return nbuf_obj2str(&o, n, lenp);
 }
 
-static inline size_t
+static inline char *
 nbuf_FieldDef_set_name(nbuf_FieldDef msg, const char *str, size_t len)
 {
 	struct nbuf_obj o = {NBUF_OBJ(msg)->buf};
-	if (!nbuf_alloc_str(&o, str, len))
-		return 0;
-	return nbuf_FieldDef_set_raw_name(msg, &o);
+	char *p;
+	if (!(p = nbuf_alloc_str(&o, str, len)))
+		return NULL;
+	if (!nbuf_FieldDef_set_raw_name(msg, &o))
+		return NULL;
+	return p;
 }
 
 static inline nbuf_Kind
