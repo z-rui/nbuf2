@@ -78,6 +78,7 @@ parse_scalar(struct ctx *ctx, void *ptr, nbuf_Kind kind, unsigned size)
 			goto err;
 		}
 		* (uint8_t *) ptr = u.u;
+		break;
 	case nbuf_Kind_UINT:
 	case nbuf_Kind_SINT:
 		EXPECT(INT);
