@@ -1,6 +1,7 @@
 EXTRA_DIST = nbuf_schema.nbuf
 
 include_HEADERS = nbuf.h libnbuf.h nbuf_schema.nb.h nbuf.hpp nbufc/libnbufc.h
+noinst_HEADERS = lex.h acutest.h nbufc/util.h
 
 lib_LTLIBRARIES = libnbuf.la libnbufc.la
 bin_PROGRAMS = nbufc/nbufc
