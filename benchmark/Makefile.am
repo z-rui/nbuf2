@@ -2,6 +2,7 @@ AM_CPPFLAGS = -I$(srcdir)/../src
 NBUFC=../src/nbufc/nbufc
 
 noinst_PROGRAMS = benchmark
+EXTRA_DIST = benchmark.nbuf
 BUILT_SOURCES = benchmark.nb.h
 benchmark_SOURCES = benchmark.c
 nodist_benchmark_SOURCES = benchmark.nb.c
@@ -20,6 +21,7 @@ benchmarkpp_LDADD = ../src/libnbuf.la
 	$(NBUFC) -cpp_out $<
 
 noinst_PROGRAMS += benchmark_pb
+EXTRA_DIST += benchmark.proto
 BUILT_SOURCES += benchmark.pb.h
 benchmark_pb_SOURCES = benchmark_pb.cc
 nodist_benchmark_pb_SOURCES = benchmark.pb.cc
@@ -29,6 +31,7 @@ benchmark_pb_LDADD = -lprotobuf
 	protoc --cpp_out=. $<
 
 noinst_PROGRAMS += benchmark_fb
+EXTRA_DIST += benchmark.fbs
 BUILT_SOURCES += benchmark_generated.h
 benchmark_fb_SOURCES = benchmark_fb.cc
 benchmark_fb_LDADD = -lflatbuffers
@@ -37,6 +40,7 @@ benchmark_fb_LDADD = -lflatbuffers
 	flatc --cpp $<
 
 noinst_PROGRAMS += benchmark_cp
+EXTRA_DIST += benchmark.capnp
 BUILT_SOURCES += benchmark.capnp.h
 benchmark_cp_SOURCES = benchmark_cp.cc
 nodist_benchmark_cp_SOURCES = benchmark.capnp.c++
