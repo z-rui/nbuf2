@@ -420,18 +420,18 @@ nbuf_EnumVal_set_symbol(nbuf_EnumVal msg, const char *str, size_t len)
 	return p;
 }
 
-static inline uint16_t
+static inline int16_t
 nbuf_EnumVal_value(nbuf_EnumVal msg)
 {
 	const void *p = nbuf_obj_s(NBUF_OBJ(msg), 0, 2);
-	return (uint16_t) (p ? nbuf_u16(p) : 0);
+	return (int16_t) (p ? nbuf_i16(p) : 0);
 }
 
 static inline void *
-nbuf_EnumVal_set_value(nbuf_EnumVal msg, uint16_t val)
+nbuf_EnumVal_set_value(nbuf_EnumVal msg, int16_t val)
 {
 	void *p = nbuf_obj_s(NBUF_OBJ(msg), 0, 2);
-	if (p) nbuf_set_u16(p, val);
+	if (p) nbuf_set_i16(p, val);
 	return p;
 }
 
