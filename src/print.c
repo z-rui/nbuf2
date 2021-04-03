@@ -35,37 +35,34 @@ static bool
 print_scalar(struct ctx *ctx,
 	const void *ptr, nbuf_Kind kind, unsigned size)
 {
-	union {
-		uint64_t u;
-		int64_t i;
-		float f;
-		double d;
-	} u;
-
-	switch (size) {
-	case 1: u.u = nbuf_u8(ptr); break;
-	case 2: u.u = nbuf_u16(ptr); break;
-	case 4: u.u = nbuf_u32(ptr); break;
-	case 8: u.u = nbuf_u64(ptr); break;
-	default: goto bad;
-	}
 	switch (kind) {
 	case nbuf_Kind_UINT:
-		fprintf(ctx->f, "%" PRIu64, u.u);
+		switch (size) {
+		case 1: fprintf(ctx->f, "%" PRIu8, nbuf_u8(ptr)); break;
+		case 2: fprintf(ctx->f, "%" PRIu16, nbuf_u16(ptr)); break;
+		case 4: fprintf(ctx->f, "%" PRIu32, nbuf_u32(ptr)); break;
+		case 8: fprintf(ctx->f, "%" PRIu64, nbuf_u64(ptr)); break;
+		default: goto bad;
+		}
 		break;
 	case nbuf_Kind_SINT:
-		fprintf(ctx->f, "%" PRId64, u.i);
+		switch (size) {
+		case 1: fprintf(ctx->f, "%" PRId8, nbuf_i8(ptr)); break;
+		case 2: fprintf(ctx->f, "%" PRId16, nbuf_i16(ptr)); break;
+		case 4: fprintf(ctx->f, "%" PRId32, nbuf_i32(ptr)); break;
+		case 8: fprintf(ctx->f, "%" PRId64, nbuf_i64(ptr)); break;
+		default: goto bad;
+		}
 		break;
 	case nbuf_Kind_FLT:
-		if (size == 4)
-			fprintf(ctx->f, "%.*g", FLT_DIG+1, u.f);
-		else if (size == 8)
-			fprintf(ctx->f, "%.*lg", DBL_DIG+1, u.d);
-		else
-			goto bad;
+		switch (size) {
+		case 4: fprintf(ctx->f, "%.*g", FLT_DIG+1, nbuf_f32(ptr)); break;
+		case 8: fprintf(ctx->f, "%.*lg", DBL_DIG+1, nbuf_f64(ptr)); break;
+		default: goto bad;
+		}
 		break;
 	case nbuf_Kind_BOOL:
-		fprintf(ctx->f, "%s", u.i ? "true" : "false");
+		fprintf(ctx->f, "%s", nbuf_u8(ptr) ? "true" : "false");
 		break;
 	default:
 bad:
