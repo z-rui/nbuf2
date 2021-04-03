@@ -1,0 +1,5 @@
+ACLOCAL_AMFLAGS = -I m4
+
+SUBDIRS = src
+DIST_SUBDIRS = benchmark tests
+EXTRA_DIST = README.md doc
