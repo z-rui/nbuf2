@@ -8,6 +8,7 @@ TARGETS+=benchmarkpp
 TARGETS+=benchmark_pb  # Protocol Buffers
 TARGETS+=benchmark_fb  # Flatbuffers
 TARGETS+=benchmark_cp  # Cap'n Proto
+TARGETS+=benchmark_json  # json-c
 
 all: $(TARGETS)
 
@@ -61,3 +62,8 @@ benchmark.capnp.o: benchmark.capnp.c++ benchmark.capnp.h
 %.capnp.h %.capnp.c++: %.capnp
 	capnp compile -oc++ $<
 
+benchmark_json: benchmark_json.o
+	$(CC) $(LDFLAGS) -o $@ $< -ljson-c
+
+benchmark_json.o: benchmark_json.c
+	$(CC) $(CFLAGS) `pkg-config --cflags json-c` -c -o $@ $<
