@@ -3,12 +3,12 @@
 
 #include <stdbool.h>
 
-#ifdef _POSIX_C_SOURCE
+#ifdef HAVE_UNISTD_H
 # include <sys/stat.h>
 #endif
 
 struct FileId {
-#if _POSIX_C_SOURCE
+#if HAVE_UNISTD_H
 	dev_t dev;
 	ino_t ino;
 #else

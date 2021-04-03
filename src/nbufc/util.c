@@ -1,3 +1,4 @@
+#include "config.h"
 #include "nbuf.h"
 #include "util.h"
 #include "libnbufc.h"
@@ -30,7 +31,7 @@ void nbufc_out_path_ident(FILE *f, const char *s)
 
 bool nbuf_fileid(struct FileId *file_id, const char *path)
 {
-#if _POSIX_C_SOURCE
+#if HAVE_UNISTD_H
 	struct stat statbuf;
 
 	if (stat(path, &statbuf) == -1) {
@@ -47,7 +48,7 @@ bool nbuf_fileid(struct FileId *file_id, const char *path)
 
 bool nbuf_samefile(struct FileId x, struct FileId y)
 {
-#if _POSIX_C_SOURCE
+#if HAVE_UNISTD_H
 	return x.dev == y.dev && x.ino == y.ino;
 #else
 	return strcmp(x.path, y.path) == 0;

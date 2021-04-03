@@ -1,10 +1,11 @@
+#include "config.h"
 #include "libnbuf.h"
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#if _POSIX_C_SOURCE
+#if HAVE_UNISTD_H
 # include <fcntl.h>
 # include <sys/mman.h>
 # include <sys/types.h>
@@ -16,8 +17,7 @@
 # include <sys/stat.h>
 #endif
 
-
-#if _POSIX_C_SOURCE || defined _WIN32
+#if HAVE_UNISTD_H || defined _WIN32
 static size_t nbuf_load_fd_read(struct nbuf_buf *buf, int fd)
 {
 	size_t readsz;
@@ -46,7 +46,7 @@ err:
 }
 #endif
 
-#if _POSIX_C_SOURCE || defined _WIN32
+#if HAVE_UNISTD_H || defined _WIN32
 size_t nbuf_load_fd(struct nbuf_buf *buf, int fd)
 {
 #ifdef _WIN32
@@ -70,7 +70,7 @@ size_t nbuf_load_fd(struct nbuf_buf *buf, int fd)
 	/* Will not ues mmap if using sanitizers,
 	 * so memory leak will be detected.
 	 */
-#if _POSIX_MAPPED_FILES
+#if HAVE_MMAP
 	if (buf->len && S_ISREG(statbuf.st_mode)) {
 		buf->base = mmap(NULL, buf->len, PROT_READ, MAP_SHARED, fd, 0);
 		if (buf->base == MAP_FAILED) {
@@ -89,7 +89,7 @@ size_t nbuf_load_fd(struct nbuf_buf *buf, int fd)
 
 size_t nbuf_load_fp(struct nbuf_buf *buf, FILE *f)
 {
-#if _POSIX_C_SOURCE
+#if HAVE_UNISTD_H
 	return nbuf_load_fd(buf, fileno(f));
 #elif defined _WIN32
 	return nbuf_load_fd(buf, _fileno(f));
@@ -128,7 +128,7 @@ size_t nbuf_load_file(struct nbuf_buf *buf, const char *filename)
 
 void nbuf_unload_file(struct nbuf_buf *buf)
 {
-#if _POSIX_MAPPED_FILES
+#if HAVE_MMAP
 	if (buf->base != NULL && buf->cap == 0) {
 		/* mmap-ed region */
 		if (munmap(buf->base, buf->len) == -1)
@@ -140,7 +140,7 @@ void nbuf_unload_file(struct nbuf_buf *buf)
 	buf->len = buf->cap = 0;
 }
 
-#if _POSIX_C_SOURCE || defined _WIN32
+#if HAVE_UNISTD_H || defined _WIN32
 size_t nbuf_save_fd(struct nbuf_buf *buf, int fd)
 {
 	if (write(fd, buf->base, buf->len) != buf->len) {
@@ -170,11 +170,7 @@ size_t nbuf_save_file(struct nbuf_buf *buf, const char *filename)
 		perror("fopen");
 		return 0;
 	}
-#if _POSIX_C_SOURCE
-	rc = nbuf_save_fd(buf, fileno(f));
-#else
 	rc = nbuf_save_fp(buf, f);
-#endif
 	fclose(f);
 	return rc;
 }
