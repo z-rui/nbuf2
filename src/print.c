@@ -10,6 +10,7 @@ struct ctx {
 	int indent, curr_indent;
 	int depth, max_depth;
 	char nl;
+	unsigned print_flags;
 };
 
 static bool
@@ -175,7 +176,8 @@ print_one_scalar:
 print_one_str:
 			indent_fname(ctx, fname, fname_len);
 			fprintf(ctx->f, ": ");
-			nbuf_print_escaped(ctx->f, (const char *) ptr, slen, 0);
+			nbuf_print_escaped(ctx->f, (const char *) ptr, slen,
+				ctx->print_flags);
 			putc(ctx->nl, ctx->f);
 			if (--len == 0)
 				break;
@@ -231,6 +233,7 @@ bool nbuf_print(const struct nbuf_print_opt *opt,
 		.depth = 0,
 		.max_depth = (opt->max_depth > 0) ? opt->max_depth : 500,
 		.nl = (opt->indent < 0) ? ' ' : '\n',
+		.print_flags = (opt->loose_escape) ? NBUF_PRINT_LOOSE_ESCAPE : 0,
 	};
 
 	if (opt->msg_type_hdr) {

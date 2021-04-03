@@ -248,7 +248,8 @@ nomem:
 
 void nbuf_print_escaped(FILE *f, const char *s, size_t len, unsigned flags)
 {
-	size_t max_col = flags;
+	bool loose_escape = flags & NBUF_PRINT_LOOSE_ESCAPE;
+	size_t max_col = (flags &= ~NBUF_PRINT_LOOSE_ESCAPE);
 	size_t col = 0;
 
 	putc('"', f);
@@ -274,7 +275,7 @@ char_esc:
 			col += 2;
 			break;
 		default:
-			if (isprint(ch)) {
+			if (isprint(ch) || (loose_escape && (ch & 0x80))) {
 				putc(ch, f);
 				col++;
 			} else {

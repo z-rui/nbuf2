@@ -101,6 +101,10 @@ struct nbuf_print_opt {
 	/* Write a comment on the first line indicating the message type.
 	 */
 	bool msg_type_hdr;
+	/* Do not escape characters >= 128.
+	 * May be useful if the string contains non-ASCII printable characters.
+	 */
+	bool loose_escape;
 };
 
 /* Prints an object whose type is specified by mdef.
@@ -125,6 +129,8 @@ bool nbuf_parse(struct nbuf_parse_opt *opt, struct nbuf_obj *o,
 	const char *input, size_t input_len, nbuf_MsgDef mdef);
 
 size_t nbuf_unescape(struct nbuf_buf *buf, const char *s, size_t len);
+
+#define NBUF_PRINT_LOOSE_ESCAPE 0x80000000U
 void nbuf_print_escaped(FILE *f, const char *s, size_t len, unsigned flags);
 
 #ifdef __cplusplus

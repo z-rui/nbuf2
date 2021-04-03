@@ -90,7 +90,13 @@ static int
 decode(struct ctx *ctx, const char *msg_type)
 {
 	nbuf_MsgDef mdef;
-	struct nbuf_print_opt opt;
+	struct nbuf_print_opt opt = {
+		.f = stdout,
+		.indent = 2,
+		.max_depth = 0,
+		.msg_type_hdr = true,
+		.loose_escape = true,
+	};
 	struct nbuf_buf buf;
 	struct nbuf_obj o;
 	nbuf_Schema schema;
@@ -120,10 +126,6 @@ decode(struct ctx *ctx, const char *msg_type)
 		fprintf(stderr, "error: cannot get root object\n");
 		goto err;
 	}
-	opt.f = stdout;
-	opt.indent = 2;
-	opt.max_depth = 0;
-	opt.msg_type_hdr = true;
 	if (!nbuf_print(&opt, &o, mdef))
 		goto err;
 	nbuf_unload_file(&buf);
