@@ -147,7 +147,7 @@ void test_parse_print(void)
 		.outbuf = &parsebuf,
 		.filename = "<test input>",
 	};
-	FILE *f = tmpfile();
+	FILE *f = fopen("test.out", "w+");
 	struct nbuf_print_opt propt = {
 		.f = f,
 		.indent = -1,
