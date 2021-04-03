@@ -304,6 +304,12 @@ err:
 static bool
 parse_alloced_msg(struct ctx *ctx, struct nbuf_obj *o, nbuf_MsgDef mdef)
 {
+	bool rc = false;
+
+	if (++ctx->depth > ctx->max_depth) {
+		nbuf_lexerror(ctx->l, "max nesting limit (%d) exceeded", ctx->max_depth);
+		goto err;
+	}
 	while (IS(ID)) {
 		const char *fname = TOKEN(ctx->l);
 		size_t len = TOKENLEN(ctx->l);
@@ -319,7 +325,7 @@ parse_alloced_msg(struct ctx *ctx, struct nbuf_obj *o, nbuf_MsgDef mdef)
 
 		if (!nbuf_lookup_field(&fdef, mdef, fname, len)) {
 			nbuf_lexerror(ctx->l, "unknown field '%.*s'", (int) len, fname);
-			return false;
+			goto err;
 		}
 		fname = nbuf_FieldDef_name(fdef, NULL);
 		offset = nbuf_FieldDef_offset(fdef);
@@ -327,16 +333,19 @@ parse_alloced_msg(struct ctx *ctx, struct nbuf_obj *o, nbuf_MsgDef mdef)
 		if (kind == -1) {
 			nbuf_lexerror(ctx->l,
 				"cannot determine type for field '%s'", fname);
-			return false;
+			goto err;
 		}
 		NEXT;
 		ok = nbuf_is_repeated(kind) ? 
 			parse_repeated_field(ctx, o, fname, nbuf_base_kind(kind), offset, &u.o) :
 			parse_single_field(ctx, o, fname, kind, offset, &u.o);
 		if (!ok)
-			return false;
+			goto err;
 	}
-	return true;
+	rc = true;
+err:
+	--ctx->depth;
+	return rc;
 }
 
 static bool
