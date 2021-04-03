@@ -1,2 +1,3 @@
 *.nb.[ch]
+*.nb.hpp
 *.bin

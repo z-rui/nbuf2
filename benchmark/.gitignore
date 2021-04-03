@@ -1,5 +1,6 @@
 # generated files
 *.nb.[ch]
+*.nb.hpp
 *.pb.cc
 *.pb.h
 *.capnp.c++
