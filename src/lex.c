@@ -94,7 +94,7 @@ skiplong(lexState *l)
 	ch = GETC(l);
 	while (ch != Token_EOF)
 		if (ch == '*') {
-			if ((ch = GETC(l) == '/'))
+			if ((ch = GETC(l)) == '/')
 				break;
 		} else {
 			if (ch == '\n')
@@ -246,7 +246,7 @@ reinput:
 		UNGETC(l, ch);
 		if (isdigit(ch))
 			return scannum(l, '-');
-		break;
+		return (Token) '-';
 	default:
 		if (isdigit(ch))
 			return scannum(l, ch);

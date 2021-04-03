@@ -37,7 +37,7 @@ libnbuf.$(SHLIB_EXT): $(OBJS)
 	$(CC) $(LDFLAGS) -shared -o $@ $^
 
 
-lex.o: lex.c lex.h nbuf.h
+lex.o: lex.c lex.h
 nbuf.o: nbuf.c nbuf.h
 parse.o: parse.c libnbuf.h nbuf.h nbuf_schema.nb.h lex.h
 print.o: print.c libnbuf.h nbuf.h nbuf_schema.nb.h

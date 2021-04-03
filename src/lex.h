@@ -1,7 +1,6 @@
 #ifndef NBUF_LEX_H_
 #define NBUF_LEX_H_
 
-#include "nbuf.h"
 #include <stddef.h>
 
 typedef struct {
