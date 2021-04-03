@@ -68,14 +68,14 @@ nbuf_fix_arr(struct nbuf_obj *o, nbuf_word_t len,
 	}
 	for (i = 0; i < len; i++) {
 		nbuf_word_t *pptr = (nbuf_word_t *) nbuf_obj_base(&it);
-		for (j = 0; j < it.psize; j++) {
+		for (j = 0; j < it.psize; j++, pptr++) {
 			nbuf_word_t rel_ptr = nbuf_word(pptr);
 			if (rel_ptr == 0)
 				continue;
 			assert(p != NULL);
 			rel_ptr = ~rel_ptr + (p - pptr);
 			assert((size_t) ((char *) (pptr + rel_ptr) - it.buf->base) < it.buf->len);
-			*pptr++ = nbuf_word(&rel_ptr);
+			*pptr = nbuf_word(&rel_ptr);
 		}
 		nbuf_next(&it);
 	}
