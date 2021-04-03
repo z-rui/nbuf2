@@ -36,7 +36,11 @@ libnbuf.a: $(OBJS)
 libnbuf.$(SHLIB_EXT): $(OBJS)
 	$(CC) $(LDFLAGS) -shared -o $@ $^
 
+test: test.o
+	$(CC) $(LDFLAGS) -o $@ $^ -lnbuf -lnbufc
 
+test.o:  test.c acutest.h nbuf_schema.nb.h nbuf.h libnbuf.h \
+ nbufc/libnbufc.h
 lex.o: lex.c lex.h
 nbuf.o: nbuf.c nbuf.h
 parse.o: parse.c libnbuf.h nbuf.h nbuf_schema.nb.h lex.h
