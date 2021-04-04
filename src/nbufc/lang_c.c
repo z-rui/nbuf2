@@ -19,7 +19,6 @@ struct ctx {
 	char *prefix;  /* pre-computed package prefix */
 };
 
-#pragma GCC visibility push(hidden)
 char *
 nbufc_replace_dots(struct nbuf_buf *buf, const char *pkg_name,
 	const char *replacement)
@@ -56,7 +55,6 @@ nbufc_out_upper_ident(FILE *f, const char *s)
 			putc((c = '_'), f);
 	}
 }
-#pragma GCC visibility pop
 
 static void
 out_enum(struct ctx *ctx, nbuf_EnumDef edef)

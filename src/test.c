@@ -147,7 +147,8 @@ void test_parse_print(void)
 		.outbuf = &parsebuf,
 		.filename = "<test input>",
 	};
-	FILE *f = fopen("test.out", "w+");
+	/* Use 'b' to suppress linefeed translation on some strange platform */
+	FILE *f = fopen("test.out", "wb+");
 	struct nbuf_print_opt propt = {
 		.f = f,
 		.indent = -1,

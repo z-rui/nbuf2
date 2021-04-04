@@ -19,8 +19,6 @@ size_t nbufc_baselen(const char *p)
 	return (dot ? dot : s) - p;
 }
 
-#pragma GCC visibility push(hidden)
-
 void nbufc_out_path_ident(FILE *f, const char *s)
 {
 	char ch;
@@ -59,5 +57,3 @@ FILE *nbufc_search_open(struct nbuf_buf *buf, const char *const dirs[], const ch
 	}
 	return NULL;
 }
-
-#pragma GCC visibility pop
