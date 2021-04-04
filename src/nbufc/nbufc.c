@@ -186,6 +186,19 @@ err:
 	return rc;
 }
 
+#define ARG0(X, Y) if (strcmp(arg, X) == 0) { Y; }
+#define ARG1(X, Y) { \
+	size_t _len = strlen(X); \
+	if (strncmp(arg, X, _len) == 0 && (arg[_len] == '\0' || arg[_len] == '=')) { \
+		if (*argv == NULL) \
+			goto missing_arg; \
+		arg = *argv++; \
+		Y; \
+	} \
+}
+
+#define MAXINCDIR 63
+
 int main(int argc, char *argv[])
 {
 	struct ctx ctx[1];
@@ -199,46 +212,36 @@ int main(int argc, char *argv[])
 		.outbuf = &outbuf,
 	};
 	int rc = 1;
+	const char *search_path[MAXINCDIR+1];
+	size_t search_path_count = 0;
 
 	memset(ctx, 0, sizeof ctx);
 	ctx->progname = *argv++;
 	while ((arg = *argv++)) {
-		if (*arg != '-')
-			goto end_of_opt;
-		++arg;
-		if (*arg == '-' && *++arg == '\0')
+		if (*arg != '-' || (*++arg == '-' && *++arg == '\0'))
 			goto end_of_opt;
 		if (strcmp(arg, "c_out") == 0) {
-			action = C_OUT;
-			break;
+			action = C_OUT; break;
 		}
-		if (strcmp(arg, "cpp_out") == 0) {
-			action = CPP_OUT;
-			break;
-		} else if (strcmp(arg, "bin_out") == 0) {
-			action = BIN_OUT;
-			break;
-		} else if (strcmp(arg, "decode") == 0) {
-			action = DECODE;
-			if (!(msg_type = *argv++)) {
-				fprintf(stderr, "missing value for option -decode\n");
-				usage(ctx, true);
+		ARG0("c_out", action = C_OUT; break);
+		ARG0("cpp_out", action = CPP_OUT; break);
+		ARG0("bin_out", action = BIN_OUT; break);
+		ARG1("decode", action = DECODE; msg_type = arg; break);
+		ARG0("decode_raw", action = DECODE_RAW; goto skip_schema);
+		ARG1("encode", action = ENCODE; msg_type = arg; break);
+		ARG1("I", {
+			if (search_path_count >= MAXINCDIR) {
+				fprintf(stderr, "too many -I options\n");
+				return 1;
 			}
-			break;
-		} else if (strcmp(arg, "decode_raw") == 0) {
-			action = DECODE_RAW;
-			goto skip_schema;
-		} else if (strcmp(arg, "encode") == 0) {
-			action = ENCODE;
-			if (!(msg_type = *argv++)) {
-				fprintf(stderr, "missing value for option -encode\n");
-				usage(ctx, true);
-			}
-			break;
-		} else {
-			fprintf(stderr, "unknown option -%s\n", arg);
-			usage(ctx, true);
-		}
+			search_path[search_path_count++] = arg;
+			continue;
+		});
+		fprintf(stderr, "unknown option -%s\n", arg);
+		usage(ctx, true);
+missing_arg:
+		fprintf(stderr, "missing argument for option -%s\n", arg);
+		usage(ctx, true);
 	}
 	if (arg && (arg = *argv) && *arg == '-') {
 		fprintf(stderr, "extra option %s\n", arg);
@@ -249,6 +252,8 @@ end_of_opt:
 		fprintf(stderr, "missing schema\n");
 		usage(ctx, true);
 	}
+	search_path[search_path_count] = NULL;
+	opt.search_path = search_path;
 	ctx->ss = nbufc_compile(&opt, arg);
 	if (!ctx->ss) {
 		fprintf(stderr, "%s: compilation failed\n", arg);

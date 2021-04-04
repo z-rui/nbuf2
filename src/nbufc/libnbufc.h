@@ -11,6 +11,16 @@
  * in the buffer. */
 struct nbufc_compile_opt {
 	struct nbuf_buf *outbuf;
+	/* NULL-terminated search paths.
+	 * The provided filename is tried first.
+	 * If filename begins with '/', no other attempts are made.
+	 * Otherwise, if it cannot be opened, then each search path
+	 * is prepended to the filename.  The first successfully opened
+	 * file will be compiled.
+	 *
+	 * Set this to NULL will disable import statements.
+	 */
+	const char *const *search_path;
 };
 struct nbuf_schema_set *
 nbufc_compile(const struct nbufc_compile_opt *opt, const char *filename);

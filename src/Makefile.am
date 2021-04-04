@@ -7,6 +7,7 @@ lib_LTLIBRARIES = libnbuf.la libnbufc.la
 bin_PROGRAMS = nbufc/nbufc
 noinst_PROGRAMS = test
 TESTS = test
+CLEANFILES = test.nb.h test.nb.hpp test.nb.c test.nbuf test.out
 
 libnbuf_la_SOURCES = nbuf.c lex.c nbuf_schema.nb.c parse.c print.c refl.c util.c
 libnbuf_la_LDFLAGS = -no-undefined

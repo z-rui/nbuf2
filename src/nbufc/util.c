@@ -1,4 +1,3 @@
-#include "config.h"
 #include "nbuf.h"
 #include "util.h"
 #include "libnbufc.h"
@@ -6,6 +5,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <string.h>
 
 size_t nbufc_baselen(const char *p)
 {
@@ -29,30 +29,35 @@ void nbufc_out_path_ident(FILE *f, const char *s)
 		isalnum(ch) ? putc(ch, f) : fprintf(f, "_%02x", ch);
 }
 
-bool nbuf_fileid(struct FileId *file_id, const char *path)
+FILE *nbufc_search_open(struct nbuf_buf *buf, const char *const dirs[], const char *filename)
 {
-#if HAVE_UNISTD_H
-	struct stat statbuf;
+	size_t filename_len = strlen(filename);
+	const char *dir;
+	size_t dir_len;
+	char *p;
+	FILE *f;
 
-	if (stat(path, &statbuf) == -1) {
-		perror(path);
-		return false;
+	buf->len = 0;
+	if ((p = nbuf_alloc(buf, filename_len + 1)) == NULL)
+		return NULL;
+	memcpy(p, filename, filename_len + 1);
+	if ((f = fopen(buf->base, "r")) != NULL)
+		return f;
+	if (filename[0] == '/' || !dirs)
+		return NULL;
+	while ((dir = *dirs++) != NULL) {
+		buf->len = 0;
+		dir_len = strlen(dir);
+		if ((p = nbuf_alloc(buf, dir_len + filename_len + 2)) == NULL)
+			return NULL;
+		memcpy(p, dir, dir_len); p += dir_len;
+		if (dir_len && p[-1] != '/')
+			*p++ = '/';
+		memcpy(p, filename, filename_len + 1);
+		if ((f = fopen(buf->base, "r")) != NULL)
+			return f;
 	}
-	file_id->dev = statbuf.st_dev;
-	file_id->ino = statbuf.st_ino;
-#else
-	file_id->path = path;
-#endif
-	return true;
-}
-
-bool nbuf_samefile(struct FileId x, struct FileId y)
-{
-#if HAVE_UNISTD_H
-	return x.dev == y.dev && x.ino == y.ino;
-#else
-	return strcmp(x.path, y.path) == 0;
-#endif
+	return NULL;
 }
 
 #pragma GCC visibility pop

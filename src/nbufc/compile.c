@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "nbuf.h"
 #include "nbuf_schema.nb.h"
 #include "lex.h"
@@ -10,6 +12,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef HAVE_UNISTD_H
+# include <sys/stat.h>
+#endif
 
 /* Local limits */
 #define MAX_DEPTH 500
@@ -24,6 +30,7 @@
 /* Poor man's std::vector */
 #define LEN(typ, f) ((f).len / sizeof (typ))
 #define ADD(typ, f) ((typ *) nbuf_alloc(&f, sizeof (typ)))
+#define POP(typ, f) ((f).len -= sizeof (typ))
 #define GET(typ, f, i) ((typ *) (f).base + i)
 #define FOR_EACH(typ, var, n, f) \
 	for (n = LEN(typ, f), var = (typ *) (f).base; n--; var++)
@@ -35,9 +42,12 @@
 } while (0)
 
 struct FileState {
-	struct FileId file_id;
 	const char *filename;
 	bool is_open;
+#if HAVE_UNISTD_H
+	dev_t dev;
+	ino_t ino;
+#endif
 	struct nbuf_schema_set *ss;
 };
 
@@ -50,10 +60,27 @@ static void dtor_FileState(struct FileState *fs)
 	}
 }
 
+static bool
+samefile(struct FileState *fs, FILE *f, const char *path)
+{
+#if HAVE_UNISTD_H
+	struct stat statbuf;
+
+	if (fstat(fileno(f), &statbuf) == -1)
+		return false;
+	return fs->dev == statbuf.st_dev && fs->ino == statbuf.st_ino;
+#else
+	/* Without OS-specific features, we can only test for path equality.
+	 */
+	return strcmp(fs->filename, path) == 0;
+#endif
+}
+
 struct ctx {
 	size_t depth;
 	Token token;
 	struct nbuf_buf *file_states;  // struct FileState
+	const char *const *search_path;
 
 	// parsing state of current file.
 	struct nbuf_buf scratch_buf;
@@ -61,6 +88,30 @@ struct ctx {
 	struct nbuf_buf bufs[MAX_BUFFER];
 	struct nbuf_buf *buf;
 };
+
+static struct FileState *
+new_FileState(struct ctx *ctx, FILE *f, const char *path)
+{
+	struct FileState *fs;
+#if HAVE_UNISTD_H
+	struct stat statbuf;
+#endif
+
+	fs = ADD(struct FileState, *ctx->file_states);
+	fs->filename = path;
+	fs->is_open = true;
+#if HAVE_UNISTD_H
+	if (fstat(fileno(f), &statbuf) == -1) {
+		perror("fstat");
+		POP(struct FileState, *ctx->file_states);
+		return NULL;
+	}
+	fs->dev = statbuf.st_dev;
+	fs->ino = statbuf.st_ino;
+#endif
+	fs->ss = NULL;
+	return fs;
+}
 
 #define NEXT_BUF (assert(ctx->buf < ctx->bufs + MAX_BUFFER), ctx->buf++)
 
@@ -72,7 +123,7 @@ struct ctx {
 #define EXPECT(X) if (ctx->token != Token_##X) { nbuf_lexsyntax(l, Token_##X, ctx->token); goto err; }
 
 static struct nbuf_schema_set *
-parse_file(struct ctx *ctx, const char *filename, size_t filename_len);
+parse_file(struct ctx *ctx, const char *filename);
 
 // strcat ::= { STR }
 static char *
@@ -163,6 +214,10 @@ parse_import(struct ctx *ctx, lexState *l, struct nbuf_buf *imports)
 		struct nbuf_schema_set **p;
 		char *input_filename;
 
+		if (!ctx->search_path) {
+			nbuf_lexerror(l, "import is disabled in compiler");
+			goto err;
+		}
 		NEXT;
 		input_filename = parse_strcat(ctx, l);
 		if (!input_filename)
@@ -172,8 +227,7 @@ parse_import(struct ctx *ctx, lexState *l, struct nbuf_buf *imports)
 		EXPECT_C(';');
 		if (!(p = ADD(struct nbuf_schema_set *, *imports)))
 			goto err;
-		if (!(*p = parse_file(ctx, input_filename,
-				strlen(input_filename))))
+		if (!(*p = parse_file(ctx, input_filename)))
 			goto err;
 		NEXT;
 	}
@@ -563,22 +617,22 @@ err:
 	return rc;
 }
 
-static struct FileState *known_file(struct ctx *ctx, struct FileId file_id)
+static struct FileState *
+find_known_file(struct ctx *ctx, FILE *f, const char *path)
 {
 	struct FileState *fs;
 	size_t n;
 
 	FOR_EACH(struct FileState, fs, n, *ctx->file_states)
-		if (nbuf_samefile(file_id, fs->file_id))
+		if (samefile(fs, f, path))
 			return fs;
 	return NULL;
 }
 
 struct nbuf_schema_set *
-parse_file(struct ctx *ctx, const char *filename, size_t filename_len)
+parse_file(struct ctx *ctx, const char *filename)
 {
 	lexState l[1];
-	struct FileId file_id;
 	nbuf_Schema schema;
 	struct nbuf_buf textschema;  // load_file
 	struct nbuf_buf binschema;
@@ -587,6 +641,7 @@ parse_file(struct ctx *ctx, const char *filename, size_t filename_len)
 	struct nbuf_schema_set *ss = NULL;
 	struct FileState *fs = NULL;
 	size_t i;
+	FILE *f = NULL;
 
 	memset(&textschema, 0, sizeof textschema);
 	memset(&binschema, 0, sizeof binschema);
@@ -599,13 +654,16 @@ parse_file(struct ctx *ctx, const char *filename, size_t filename_len)
 		goto err;
 	if (!nbuf_alloc_Schema(&schema, &binschema))
 		goto err;
-	if (!nbuf_Schema_set_src_name(schema, filename, filename_len))
+	if (!nbuf_Schema_set_src_name(schema, filename, -1))
 		goto err;
 	filename = nbuf_Schema_src_name(schema, NULL);
-	/* filename is now terminated by '\0' */
-	if (!nbuf_fileid(&file_id, filename))
+	/* filename is now persistent (no longer in scratch_buf) */
+	f = nbufc_search_open(&ctx->scratch_buf, ctx->search_path, filename);
+	if (!f) {
+		fprintf(stderr, "file '%s' cannot be found.\n", filename);
 		goto err;
-	if ((fs = known_file(ctx, file_id))) {
+	}
+	if ((fs = find_known_file(ctx, f, filename))) {
 		struct FileState *fs_end = GET(struct FileState, *ctx->file_states,
 						LEN(struct FileState, *ctx->file_states));
 		if (fs->is_open) {
@@ -624,14 +682,13 @@ parse_file(struct ctx *ctx, const char *filename, size_t filename_len)
 		}
 		goto err;
 	}
+	if (!nbuf_load_fp(&textschema, f))
+		goto err;
 	i = LEN(struct FileState, *ctx->file_states);
-	if (!(fs = ADD(struct FileState, *ctx->file_states)))
+	if (!(fs = new_FileState(ctx, f, filename)))
 		goto err;
-	if (!nbuf_load_file(&textschema, filename))
-		goto err;
-	fs->filename = filename;
-	fs->file_id = file_id;
-	fs->is_open = true;
+	fclose(f);
+	f = NULL;
 	nbuf_lexinit(l, filename, textschema.base, textschema.len);
 	NEXT;
 	if (!parse_package(ctx, l, schema))
@@ -673,6 +730,8 @@ err:
 		ss = NULL;
 	if (fs)
 		fs->is_open = false;
+	if (f)
+		fclose(f);
 	nbuf_clear(&imports);
 	nbuf_clear(&binschema);
 	nbuf_unload_file(&textschema);
@@ -695,7 +754,8 @@ nbufc_compile(const struct nbufc_compile_opt *opt, const char *filename)
 	memset(ctx, 0, sizeof ctx);
 	ctx->buf = ctx->bufs;
 	ctx->file_states = opt->outbuf;
-	ss = parse_file(ctx, filename, strlen(filename));
+	ctx->search_path = opt->search_path;
+	ss = parse_file(ctx, filename);
 
 	/* Clean up resources. */
 	nbuf_clear(&ctx->typenames);
