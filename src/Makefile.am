@@ -20,5 +20,5 @@ nbufc_nbufc_SOURCES = nbufc/nbufc.c
 nbufc_nbufc_LDADD = libnbufc.la libnbuf.la
 
 test_SOURCES = test.c
-test_CPPFLAGS = -Inbufc
+test_CPPFLAGS = -I$(srcdir)/nbufc
 test_LDADD = libnbufc.la libnbuf.la
