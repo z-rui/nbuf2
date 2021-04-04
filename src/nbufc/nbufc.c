@@ -221,7 +221,9 @@ int main(int argc, char *argv[])
 	memset(ctx, 0, sizeof ctx);
 	ctx->progname = *argv++;
 	while ((arg = *argv++)) {
-		if (*arg != '-' || (*++arg == '-' && *++arg == '\0')) {
+		if (*arg != '-')
+			goto end_of_opt;
+		if (*++arg == '-' && *++arg == '\0') {
 			arg = *argv;
 			goto end_of_opt;
 		}
