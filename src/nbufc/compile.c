@@ -1,5 +1,3 @@
-#include "config.h"
-
 #include "nbuf.h"
 #include "nbuf_schema.nb.h"
 #include "lex.h"
@@ -12,10 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef HAVE_UNISTD_H
-# include <sys/stat.h>
-#endif
 
 /* Local limits */
 #define MAX_DEPTH 500
@@ -44,10 +38,6 @@
 struct FileState {
 	const char *filename;
 	bool is_open;
-#if HAVE_UNISTD_H
-	dev_t dev;
-	ino_t ino;
-#endif
 	struct nbuf_schema_set *ss;
 };
 
@@ -63,17 +53,9 @@ static void dtor_FileState(struct FileState *fs)
 static bool
 samefile(struct FileState *fs, FILE *f, const char *path)
 {
-#if HAVE_UNISTD_H
-	struct stat statbuf;
-
-	if (fstat(fileno(f), &statbuf) == -1)
-		return false;
-	return fs->dev == statbuf.st_dev && fs->ino == statbuf.st_ino;
-#else
 	/* Without OS-specific features, we can only test for path equality.
 	 */
 	return strcmp(fs->filename, path) == 0;
-#endif
 }
 
 struct ctx {
@@ -93,22 +75,10 @@ static struct FileState *
 new_FileState(struct ctx *ctx, FILE *f, const char *path)
 {
 	struct FileState *fs;
-#if HAVE_UNISTD_H
-	struct stat statbuf;
-#endif
 
 	fs = ADD(struct FileState, *ctx->file_states);
 	fs->filename = path;
 	fs->is_open = true;
-#if HAVE_UNISTD_H
-	if (fstat(fileno(f), &statbuf) == -1) {
-		perror("fstat");
-		POP(struct FileState, *ctx->file_states);
-		return NULL;
-	}
-	fs->dev = statbuf.st_dev;
-	fs->ino = statbuf.st_ino;
-#endif
 	fs->ss = NULL;
 	return fs;
 }

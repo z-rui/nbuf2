@@ -5,16 +5,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if HAVE_UNISTD_H
-# include <fcntl.h>
-# include <sys/mman.h>
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <unistd.h>
-#elif defined _WIN32
+#if defined _WIN32
 # include <io.h>
 # include <sys/types.h>
 # include <sys/stat.h>
+#elif HAVE_UNISTD_H
+# include <fcntl.h>
+# if HAVE_MMAP
+#  include <sys/mman.h>
+# endif
+# include <sys/types.h>
+# include <sys/stat.h>
+# include <unistd.h>
 #endif
 
 #if HAVE_UNISTD_H || defined _WIN32
@@ -89,10 +91,10 @@ size_t nbuf_load_fd(struct nbuf_buf *buf, int fd)
 
 size_t nbuf_load_fp(struct nbuf_buf *buf, FILE *f)
 {
-#if HAVE_UNISTD_H
-	return nbuf_load_fd(buf, fileno(f));
-#elif defined _WIN32
+#if defined _WIN32
 	return nbuf_load_fd(buf, _fileno(f));
+#elif HAVE_UNISTD_H
+	return nbuf_load_fd(buf, fileno(f));
 #else
 	/* generic implementation */
 	int ch;
