@@ -40,7 +40,7 @@ static size_t nbuf_load_fd_read(struct nbuf_buf *buf, int fd)
 			goto err;
 		}
 		buf->len += n;
-	} while (n == readsz);
+	} while (n);
 	return buf->len;
 err:
 	nbuf_clear(buf);
