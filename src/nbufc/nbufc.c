@@ -21,10 +21,13 @@ usage(struct ctx *ctx, bool quit)
 {
 	fprintf(stderr, "usage: %s [options] [schema]\n", ctx->progname);
 	fprintf(stderr, "Options\n"
+		"  -help     show this help\n"
+		"  -I=<dir>  add directory to search path\n"
 		"  -c_out    compile schema and generate C source files\n"
-		"  -encode <msg_type>\n"
+		"  -cpp_out  compile schema and generate C++ source files\n"
+		"  -encode=<msg_type>\n"
 		"            encode a text message into binary\n"
-		"  -decode <msg_type>\n"
+		"  -decode=<msg_type>\n"
 		"            decode a binary message into text\n"
 		"  -decode_raw\n"
 		"            dump a binary message in raw format "
@@ -190,9 +193,9 @@ err:
 #define ARG1(X, Y) { \
 	size_t _len = strlen(X); \
 	if (strncmp(arg, X, _len) == 0 && (arg[_len] == '\0' || arg[_len] == '=')) { \
-		if (*argv == NULL) \
+		arg = arg[_len] ? &arg[_len+1] : *argv++; \
+		if (arg == NULL) \
 			goto missing_arg; \
-		arg = *argv++; \
 		Y; \
 	} \
 }
@@ -218,10 +221,9 @@ int main(int argc, char *argv[])
 	memset(ctx, 0, sizeof ctx);
 	ctx->progname = *argv++;
 	while ((arg = *argv++)) {
-		if (*arg != '-' || (*++arg == '-' && *++arg == '\0'))
+		if (*arg != '-' || (*++arg == '-' && *++arg == '\0')) {
+			arg = *argv;
 			goto end_of_opt;
-		if (strcmp(arg, "c_out") == 0) {
-			action = C_OUT; break;
 		}
 		ARG0("c_out", action = C_OUT; break);
 		ARG0("cpp_out", action = CPP_OUT; break);
@@ -237,20 +239,21 @@ int main(int argc, char *argv[])
 			search_path[search_path_count++] = arg;
 			continue;
 		});
+		ARG0("help", show_usage: usage(ctx, true));
 		fprintf(stderr, "unknown option -%s\n", arg);
-		usage(ctx, true);
+		goto show_usage;
 missing_arg:
 		fprintf(stderr, "missing argument for option -%s\n", arg);
-		usage(ctx, true);
+		goto show_usage;
 	}
 	if (arg && (arg = *argv) && *arg == '-') {
 		fprintf(stderr, "extra option %s\n", arg);
-		usage(ctx, true);
+		goto show_usage;
 	}
 end_of_opt:
 	if (arg == NULL) {
 		fprintf(stderr, "missing schema\n");
-		usage(ctx, true);
+		goto show_usage;
 	}
 	search_path[search_path_count] = NULL;
 	opt.search_path = search_path;
