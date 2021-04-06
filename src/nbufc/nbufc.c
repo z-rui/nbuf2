@@ -193,9 +193,13 @@ err:
 #define ARG1(X, Y) { \
 	size_t _len = strlen(X); \
 	if (strncmp(arg, X, _len) == 0 && (arg[_len] == '\0' || arg[_len] == '=')) { \
-		arg = arg[_len] ? &arg[_len+1] : *argv++; \
-		if (arg == NULL) \
+		if (arg[_len]) { \
+			arg = &arg[_len+1]; \
+		} else if (*argv != NULL) { \
+			arg = *argv++; \
+		} else { \
 			goto missing_arg; \
+		} \
 		Y; \
 	} \
 }

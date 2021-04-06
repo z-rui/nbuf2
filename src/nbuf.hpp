@@ -244,7 +244,7 @@ struct string : basic_array {
 	}
 	template <typename U>
 	static string alloc(buffer *buf, const U &s) {
-		return alloc(buf, s.size(), s.data());
+		return alloc(buf, s.data(), s.size());
 	}
 };
 
