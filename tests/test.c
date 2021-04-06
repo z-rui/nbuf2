@@ -13,8 +13,9 @@
 #include <unistd.h>
 
 #define TOTAL_LOGS 100
+#define OUTPUT "test.bin"
 
-char *makemsg(int n)
+static char *makemsg(int n)
 {
 	char *s;
 
@@ -25,36 +26,15 @@ char *makemsg(int n)
 	return s;
 }
 
-int main()
+static void write_msg(void)
 {
 	int i;
-	struct nbuf_buf buf[1];
+	struct nbuf_buf buf;
 	LogFile logfile;
 	logging_LogEntry entries;
-	const char output[] = "test.bin";
 
-#if 0
-	if (nbuf_load_file(buf, output)) {
-		struct nbuf_print_opt opt = {
-			.f = stdout,
-			.indent = 2,
-		};
-		get_LogFile(&logfile, buf, 0);
-		nbuf_print(&opt, NBUF_OBJ(logfile), refl_LogFile);
-		nbuf_unload_file(buf);
-		unlink(output);
-	}
-#endif
-	{
-		struct nbuf_print_opt opt = {
-			.f = stdout,
-			.indent = 2,
-		};
-		/* print self schema */
-		nbuf_print(&opt, NBUF_OBJ(refl_LogFile), nbuf_refl_MsgDef);
-	}
-	nbuf_init_rw(buf, 4096);
-	alloc_LogFile(&logfile, buf);
+	nbuf_init_rw(&buf, 4096);
+	alloc_LogFile(&logfile, &buf);
 	LogFile_alloc_log_entry(&entries, logfile, TOTAL_LOGS);
 
 	for (i = 0; i < TOTAL_LOGS; i++) {
@@ -78,8 +58,44 @@ int main()
 			logging_LogSeverity_INFO);
 		usleep(1000);
 	}
-	fprintf(stderr, "dumping log to %s\n", output);
-	nbuf_save_file(buf, output);
-	nbuf_clear(buf);
+	fprintf(stderr, "dumping log to %s\n", OUTPUT);
+	nbuf_save_file(&buf, OUTPUT);
+	nbuf_clear(&buf);
+}
+
+static void read_msg(void)
+{
+	int i;
+	struct nbuf_buf buf;
+	LogFile logfile;
+	logging_LogEntry entry;
+	size_t n;
+
+	fprintf(stderr, "loading log from %s\n", OUTPUT);
+	nbuf_load_file(&buf, OUTPUT);
+	get_LogFile(&logfile, &buf, 0);
+	n = LogFile_log_entry(&entry, logfile, 0);
+
+	for (i = 0; i < n; i++) {
+		datetime_Timestamp timestamp;
+		uint32_t sec, nsec;
+		const char *msg;
+		logging_LogSeverity severity;
+
+		logging_LogEntry_timestamp(&timestamp, entry);
+		sec = datetime_Timestamp_seconds(timestamp);
+		nsec = datetime_Timestamp_nanoseconds(timestamp);
+		msg = logging_LogEntry_message(entry, NULL);
+		severity = logging_LogEntry_severity(entry);
+		printf("%d.%d (%d): %s", sec, nsec, severity, msg);
+		nbuf_next(NBUF_OBJ(entry));
+	}
+	nbuf_unload_file(&buf);
+}
+
+int main()
+{
+	write_msg();
+	read_msg();
 	return 0;
 }
