@@ -7,8 +7,7 @@
 #include "nbuf_schema.nb.h"
 #include "libnbuf.h"
 
-const struct nbuf_schema_set NBUF_SS_NAME = {
-	/*.buf=*/{ /*.base=*/(char *)
+static const char buffer_[] =
 "\4\0\0\200\n\0\0\0\3\0\0\0\v\0\0\0<\0\0\0\21\0\0\300nbuf_schema.nbuf\0\0\0"
 "\0\5\0\0\300nbuf\0\0\0\0\2\0\0\240\1\0\0\0\2\0\0\0\4\0\0\0\5\0\0\300Kind\0"
 "\0\0\0\1\0\1\240\t\0\0\0\22\0\0\0\0\0\0\0\23\0\0\0\1\0\0\0\24\0\0\0\2\0\0"
@@ -35,13 +34,30 @@ const struct nbuf_schema_set NBUF_SS_NAME = {
 "\t\0\0\300FieldDef\0\0\0\0\1\0\2\240\5\0\0\0\17\0\0\0\a\0\0\0\0\0\0\0\17\0"
 "\0\0\2\0\0\0\0\0\0\0\17\0\0\0\3\0\0\0\1\0\2\0\20\0\0\0\3\0\0\0\1\0\4\0\20"
 "\0\0\0\3\0\0\0\1\0\6\0\5\0\0\300name\0l\0e\5\0\0\300kind\0s\0_\n\0\0\300i"
-"mport_id\0\0\300\b\0\0\300type_id\0\a\0\0\300offset",
-		/*.len=*/1035, /*.cap=*/0},
-	/*.nimports=*/0, /*.imports=*/{
-	}
+"mport_id\0\0\300\b\0\0\300type_id\0\a\0\0\300offset";
+
+const struct nbuf_schema_set NBUF_SS_NAME = {
+	{ (char *) buffer_, 1035, 0 }, 0,
 };
 
 const nbuf_EnumDef nbuf_refl_Kind = {{(struct nbuf_buf *) &NBUF_SS_NAME, 64, 0, 2}};
+
+const char *nbuf_Kind_to_string(int value)
+{
+	switch (value) {
+	case nbuf_Kind_VOID: return buffer_ + 168;
+	case nbuf_Kind_BOOL: return buffer_ + 180;
+	case nbuf_Kind_ENUM: return buffer_ + 192;
+	case nbuf_Kind_UINT: return buffer_ + 204;
+	case nbuf_Kind_SINT: return buffer_ + 216;
+	case nbuf_Kind_FLT: return buffer_ + 228;
+	case nbuf_Kind_MSG: return buffer_ + 236;
+	case nbuf_Kind_STR: return buffer_ + 244;
+	case nbuf_Kind_ARR: return buffer_ + 252;
+	}
+	return NULL;
+}
+
 const nbuf_MsgDef nbuf_refl_Schema = {{(struct nbuf_buf *) &NBUF_SS_NAME, 264, 4, 2}};
 const nbuf_MsgDef nbuf_refl_EnumDef = {{(struct nbuf_buf *) &NBUF_SS_NAME, 276, 4, 2}};
 const nbuf_MsgDef nbuf_refl_EnumVal = {{(struct nbuf_buf *) &NBUF_SS_NAME, 288, 4, 2}};

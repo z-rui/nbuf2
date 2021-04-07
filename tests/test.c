@@ -87,7 +87,7 @@ static void read_msg(void)
 		nsec = datetime_Timestamp_nanoseconds(timestamp);
 		msg = logging_LogEntry_message(entry, NULL);
 		severity = logging_LogEntry_severity(entry);
-		printf("%d.%d (%d): %s", sec, nsec, severity, msg);
+		printf("%d.%d (%s): %s", sec, nsec, logging_LogSeverity_to_string(severity), msg);
 		nbuf_next(NBUF_OBJ(entry));
 	}
 	nbuf_unload_file(&buf);

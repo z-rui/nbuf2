@@ -20,6 +20,8 @@ typedef enum {
 } nbuf_Kind;
 extern const struct nbuf_EnumDef_ nbuf_refl_Kind;
 
+const char *nbuf_Kind_to_string(int);
+
 typedef struct nbuf_Schema_ {
 	struct nbuf_obj o;
 } nbuf_Schema;

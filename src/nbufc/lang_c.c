@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -72,8 +73,9 @@ out_enum(struct ctx *ctx, nbuf_EnumDef edef)
 		fprintf(f, "\t%s%s_%s = %d,\n", ctx->prefix, name, symbol, value);
 	}
 	fprintf(f, "} %s%s;\n", ctx->prefix, name);
-	fprintf(ctx->f, "extern const struct nbuf_EnumDef_ %srefl_%s;\n\n",
+	fprintf(f, "extern const struct nbuf_EnumDef_ %srefl_%s;\n\n",
 		ctx->prefix, nbuf_EnumDef_name(edef, NULL));
+	fprintf(f, "const char *%s%s_to_string(int);\n\n", ctx->prefix, name);
 }
 
 static void out_struct(struct ctx *ctx, nbuf_MsgDef mdef)
@@ -456,33 +458,57 @@ static void out_refl_c(struct ctx *ctx)
 	 */
 	if (buflen && ctx->ss->buf.base[buflen-1] == '\0')
 		buflen--;
-	fprintf(ctx->f, "const struct nbuf_schema_set NBUF_SS_NAME = {\n");
-	fprintf(ctx->f, "\t/*.buf=*/{ /*.base=*/(char *)\n");
+	fprintf(ctx->f, "static const char buffer_[] =\n");
 	nbuf_print_escaped(ctx->f, ctx->ss->buf.base, buflen, 78);
-	fprintf(ctx->f, ",\n\t\t/*.len=*/%lu, /*.cap=*/0},\n"
-		"\t/*.nimports=*/%u, /*.imports=*/{\n",
-		(unsigned long) ctx->ss->buf.len, (unsigned) ctx->ss->nimports);
-	for (i = 0; i < ctx->ss->nimports; i++) {
-		nbuf_Schema schema;
-		const char *import_src;
-		nbuf_get_Schema(&schema, &ctx->ss->imports[i]->buf, 0);
-		import_src = nbuf_Schema_src_name(schema, NULL);
-		fprintf(ctx->f, "\t\t(struct nbuf_schema_set *) &" SCHEMA_FILE_PREFIX);
-		nbufc_out_path_ident(ctx->f, import_src);
-		fprintf(ctx->f, ",\n");
+	fprintf(ctx->f, ";\n\n");
+	fprintf(ctx->f, "const struct nbuf_schema_set NBUF_SS_NAME = {\n");
+	fprintf(ctx->f, "\t{ (char *) buffer_, %lu, 0 }, %u,",
+		(unsigned long) ctx->ss->buf.len,
+		(unsigned) ctx->ss->nimports);
+	if (ctx->ss->nimports > 0) {
+		fprintf(ctx->f, " {\n");
+		for (i = 0; i < ctx->ss->nimports; i++) {
+			nbuf_Schema schema;
+			const char *import_src;
+
+			nbuf_get_Schema(&schema, &ctx->ss->imports[i]->buf, 0);
+			import_src = nbuf_Schema_src_name(schema, NULL);
+			fprintf(ctx->f, "\t\t(struct nbuf_schema_set *) &" SCHEMA_FILE_PREFIX);
+			nbufc_out_path_ident(ctx->f, import_src);
+			fprintf(ctx->f, ",\n");
+		}
+		fprintf(ctx->f, "\t},");
 	}
-	fprintf(ctx->f, "\t}\n};\n\n");
+	fprintf(ctx->f, "\n};\n\n");
 
 	for (n = nbuf_Schema_enums(&edef, ctx->schema, 0); n--; nbuf_next(NBUF_OBJ(edef))) {
+		nbuf_EnumVal eval;
+		const char *name = nbuf_EnumDef_name(edef, NULL);
+		size_t m;
+
 		fprintf(ctx->f, "const nbuf_EnumDef %srefl_%s = "
-			"{{(struct nbuf_buf *) &NBUF_SS_NAME, %u, %u, %u}};\n",
-			ctx->prefix, nbuf_EnumDef_name(edef, NULL),
-			NBUF_OBJ(edef)->offset, NBUF_OBJ(edef)->ssize,
+			"{{(struct nbuf_buf *) &NBUF_SS_NAME, %" PRIu32 ", %" PRIu16 ", %" PRIu16 "}};\n\n",
+			ctx->prefix, name, NBUF_OBJ(edef)->offset, NBUF_OBJ(edef)->ssize,
 			NBUF_OBJ(edef)->psize);
+		fprintf(ctx->f, "const char *%s%s_to_string(int value)\n{\n", ctx->prefix, name);
+		fprintf(ctx->f, "\tswitch (value) {\n");
+		for (m = nbuf_EnumDef_values(&eval, edef, 0); m--; nbuf_next(NBUF_OBJ(eval))) {
+			struct nbuf_obj o;
+			size_t len;
+
+			if (!(len = nbuf_EnumVal_raw_symbol(&o, eval)))
+				continue;  /* corrupted? */
+			fprintf(ctx->f, "\tcase %s%s_%s: return buffer_ + %" PRIu32 ";\n",
+				ctx->prefix, name, nbuf_obj2str(&o, len, NULL),
+				o.offset);
+		}
+		fprintf(ctx->f, "\t}\n"
+			"\treturn NULL;\n"
+			"}\n\n");
 	}
 	for (n = nbuf_Schema_messages(&mdef, ctx->schema, 0); n--; nbuf_next(NBUF_OBJ(mdef))) {
 		fprintf(ctx->f, "const nbuf_MsgDef %srefl_%s = "
-			"{{(struct nbuf_buf *) &NBUF_SS_NAME, %u, %u, %u}};\n",
+			"{{(struct nbuf_buf *) &NBUF_SS_NAME, %" PRIu32 ", %" PRIu16 ", %" PRIu16 "}};\n",
 			ctx->prefix, nbuf_MsgDef_name(mdef, NULL),
 			NBUF_OBJ(mdef)->offset, NBUF_OBJ(mdef)->ssize,
 			NBUF_OBJ(mdef)->psize);
