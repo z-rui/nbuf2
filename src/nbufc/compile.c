@@ -327,7 +327,7 @@ parse_field_defs(struct ctx *ctx, lexState *l, nbuf_MsgDef mdef)
 		goto err;
 	}
 	if (!nbuf_MsgDef_set_raw_fields(mdef, NBUF_OBJ(fdef))) {
-		fprintf(stderr, "internal error: cannot set MsgDef.fields\n");
+		assert(0 && "cannot set MsgDef.fields");
 		goto err;
 	}
 	rc = true;
@@ -361,13 +361,13 @@ parse_message_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 		if (!nbuf_alloc_str(&o, TOKEN(l), TOKENLEN(l)))
 			goto err;
 		if (!nbuf_MsgDef_set_raw_name(mdef, &o)) {
-			fprintf(stderr, "internal error: cannot set MsgDef.name\n");
-			return false;
+			assert(0 && "cannot set MsgDef.name");
+			goto err;
 		}
 		NEXT;
 		EXPECT_C('{'); NEXT;
 		if (!parse_field_defs(ctx, l, mdef))
-			return false;
+			goto err;
 		EXPECT_C('}'); NEXT;
 		nbuf_next(NBUF_OBJ(mdef));
 	}
@@ -379,7 +379,7 @@ parse_message_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 			goto err;
 		}
 		if (!nbuf_Schema_set_raw_messages(schema, NBUF_OBJ(mdef))) {
-			fprintf(stderr, "internal error: cannot set Schema.messages\n");
+			assert(0 && "cannot set Schema.messages");
 			goto err;
 		}
 	}
@@ -410,8 +410,8 @@ parse_enum_vals(struct ctx *ctx, lexState *l, nbuf_EnumDef edef, long *value)
 		if (!nbuf_alloc_str(&o, TOKEN(l), TOKENLEN(l)))
 			goto err;
 		if (!nbuf_EnumVal_set_raw_symbol(eval, &o)) {
-			fprintf(stderr, "internal error: cannot set EnumVal.symbol\n");
-			return false;
+			assert(0 && "cannot set EnumVal.symbol");
+			goto err;
 		}
 		NEXT;
 		if (IS_C('=')) {
@@ -425,8 +425,8 @@ parse_enum_vals(struct ctx *ctx, lexState *l, nbuf_EnumDef edef, long *value)
 			/* not a fatal error */
 		}
 		if (!nbuf_EnumVal_set_value(eval, *value)) {
-			fprintf(stderr, "internal error: cannot set EnumVal.value\n");
-			return false;
+			assert(0 && "cannot set EnumVal.value");
+			goto err;
 		}
 		++*value;
 		nbuf_next(NBUF_OBJ(eval));
@@ -442,7 +442,7 @@ parse_enum_vals(struct ctx *ctx, lexState *l, nbuf_EnumDef edef, long *value)
 		goto err;
 	}
 	if (!nbuf_EnumDef_set_raw_values(edef, NBUF_OBJ(eval))) {
-		fprintf(stderr, "internal error: cannot set EnumDef.values\n");
+		assert(0 && "cannot set EnumDef.values");
 		goto err;
 	}
 	rc = true;
@@ -478,7 +478,7 @@ parse_enum_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 		if (!nbuf_alloc_str(&o, TOKEN(l), TOKENLEN(l)))
 			goto err;
 		if (!nbuf_EnumDef_set_raw_name(edef, &o)) {
-			fprintf(stderr, "internal error: cannot set MsgDef.name\n");
+			assert(0 && "cannot set MsgDef.name");
 			goto err;
 		}
 		NEXT;
@@ -497,7 +497,7 @@ parse_enum_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 			goto err;
 		}
 		if (!nbuf_Schema_set_raw_enums(schema, NBUF_OBJ(edef))) {
-			fprintf(stderr, "internal error: cannot set Schema.enums\n");
+			assert(0 && "cannot set Schema.enums");
 			goto err;
 		}
 	}

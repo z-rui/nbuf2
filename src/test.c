@@ -119,6 +119,27 @@ static void check_str_leq(const char *a, size_t lena, const char *b, size_t lenb
 	}
 }
 
+static void bad_compile_case(const char *case_name, const char *input)
+{
+	struct nbuf_buf buf = {NULL};
+	struct nbufc_compile_opt opt = {
+		.outbuf = &buf,
+	};
+
+	TEST_CASE(case_name);
+	TEST_ASSERT_(!nbufc_compile_str(&opt, input, strlen(input), "<string>"),
+		"compile should fail");
+	TEST_CHECK(buf.base == NULL);
+}
+
+void test_bad_compile(void)
+{
+	bad_compile_case("disabled import", "import \"foo\";");
+	bad_compile_case("unresolved type", "message T { U x; }");
+	bad_compile_case("empty enum", "enum T {}");
+	bad_compile_case("empty message", "message T {}");
+}
+
 void test_parse_print(void)
 {
 	struct nbuf_buf textbuf = {NULL}, parsebuf = {NULL};
@@ -212,6 +233,7 @@ void test_depth_limit(void)
 }
 
 TEST_LIST = {
+	{"bad_compile", test_bad_compile},
 	{"parse_print", test_parse_print},
 	{"bad_parse", test_bad_parse},
 	{"depth_limit", test_depth_limit},
