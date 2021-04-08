@@ -1,5 +1,4 @@
 #include "benchmark.nb.hpp"
-#include "libnbuf.h"
 
 #include <assert.h>
 
@@ -56,11 +55,11 @@ static void deserialize_use(nbuf::buffer *buf)
 
 int main()
 {
+	static char mem[8192];
 	nbuf::buffer buf;
 
-	memset(&buf, 0, sizeof buf);
+	nbuf_init_rw(&buf, mem, sizeof mem);
 	BENCH(create_serialize(&buf), 100000);
-	nbuf_save_file(&buf, "benchmark.nb.bin");
 	BENCH(deserialize_use(&buf), 100000);
 	nbuf_clear(&buf);
 	return 0;

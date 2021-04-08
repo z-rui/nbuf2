@@ -26,7 +26,7 @@ static void write_msg()
 	int i = 0;
 	nbuf::buffer buf;
 
-	nbuf_init_rw(&buf, 4096);
+	nbuf_init_ex(&buf, 4096);
 	auto log_file = LogFile::alloc(&buf);
 	for (auto entry : log_file.alloc_log_entry(TOTAL_LOGS)) {
 		using logging::LogSeverity;

@@ -147,6 +147,7 @@ typedef uint32_t nbuf_word_off_t;
 struct nbuf_buf {
 	char *base;
 	size_t len, cap;
+	char *(*realloc)(struct nbuf_buf *buf, size_t newlen);
 };
 
 /* Initializes a read-only buffer.
@@ -158,23 +159,42 @@ static inline void nbuf_init_ro(struct nbuf_buf *buf, const char *base, size_t l
 	buf->base = (char *) base;
 	buf->len = len;
 	buf->cap = 0;
+	buf->realloc = NULL;
 }
 
 /* Initializes a read-write buffer.
- * This buffer can grow dynamically.
- * New space can be allocated at the end of the buffer by calling
- * `nbuf_alloc`.
  *
- * Returns NULL on failure.
+ * New space can be allocated at the end of the buffer by calling
+ * `nbuf_alloc`.  The maximum bytes that can be allocated is `cap`.
+ *
+ * The memory of `cap` bytes is preallocated at `base`.
  */
-char *nbuf_init_rw(struct nbuf_buf *buf, size_t cap);
+static inline void nbuf_init_rw(struct nbuf_buf *buf, char *base, size_t cap)
+{
+	buf->base = base;
+	buf->len = 0;
+	buf->cap = cap;
+	buf->realloc = NULL;
+}
+
+/* Initializes a growable buffer.
+ *
+ * Return pre-allocated bytes.
+ */
+size_t nbuf_init_ex(struct nbuf_buf *buf, size_t cap);
 
 /* Clears a read-write buffer.
  * This frees the memory owned by the buffer.
  */
-void nbuf_clear(struct nbuf_buf *buf);
-
-char *nbuf_alloc_ex(struct nbuf_buf *buf, size_t newlen);
+static inline void nbuf_clear(struct nbuf_buf *buf)
+{
+	if (buf->realloc) {
+		buf->realloc(buf, 0);
+	} else {
+		buf->base = NULL;
+		buf->len = buf->cap = 0;
+	}
+}
 
 /* Allocates `size` bytes at the end of the buffer.
  * This may reallocate memory.  Any pointer pointing to
@@ -190,7 +210,7 @@ static inline char *nbuf_alloc(struct nbuf_buf *buf, size_t size)
 
 	newlen = buf->len + size;
 	if (buf->cap < newlen)
-		return nbuf_alloc_ex(buf, newlen);
+		return buf->realloc ? buf->realloc(buf, newlen) : NULL;
 	newbase = buf->base + buf->len;
 	buf->len += size;
 	return newbase;
@@ -528,10 +548,10 @@ nbuf_obj_s(const struct nbuf_obj *o, size_t byte_offset, size_t sz)
 {
 	size_t offset = o->offset + o->psize * sizeof (nbuf_word_t) + byte_offset;
 
-	/* Malformed input should have been rejected by nbuf_get_obj */
-	assert(offset + sz <= o->buf->len);
 	if (byte_offset + sz > o->ssize)
 		return NULL;
+	/* Malformed input should have been rejected by nbuf_get_obj */
+	assert(offset + sz <= o->buf->len);
 	return o->buf->base + offset;
 }
 
@@ -581,8 +601,8 @@ nbuf_obj_set_p(const struct nbuf_obj *o, size_t index, const struct nbuf_obj *rh
 	if (index >= o->psize)
 		return 0;
 	ptr_offset = o->offset + index * sizeof (nbuf_word_t);
-	if (ptr_offset + sizeof rel_ptr > o->buf->len)
-		return 0;  /* Malformed input */
+	/* Malformed input should have been rejected by nbuf_get_obj */
+	assert(ptr_offset + sizeof rel_ptr <= o->buf->len);
 	if (rhs != NULL) {
 		rel_ptr = nbuf_obj_hdr_offset(rhs);
 		if (o->buf == rhs->buf)

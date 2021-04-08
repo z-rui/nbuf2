@@ -14,7 +14,6 @@ CLEANFILES += benchmark.nb.hpp
 BUILT_SOURCES += benchmark.nb.hpp
 benchmarkpp_CXXFLAGS = $(AM_CXXFLAGS) # to avoid name clash on benchmark.o
 benchmarkpp_SOURCES = benchmark.cc
-benchmarkpp_LDADD = ../src/libnbuf.la
 
 %.nb.h %.nb.c: %.nbuf
 	$(NBUFC) -I $(srcdir) -c_out $(<F)

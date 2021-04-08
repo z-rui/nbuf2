@@ -44,7 +44,7 @@ int main() {
 	Potato potato;
 
 	srand(time(NULL));
-	nbuf_init_rw(buf, 4096);
+	nbuf_init_ex(buf, 4096);
 	alloc_Potato(&potato, buf);
 	Potato_set_ttl(potato, rand() % MAX_TTL);
 

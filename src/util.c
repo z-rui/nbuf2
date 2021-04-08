@@ -26,6 +26,7 @@ static size_t nbuf_load_fd_read(struct nbuf_buf *buf, int fd)
 	size_t readsz;
 	ssize_t n;
 
+	nbuf_init_ex(buf, 0);
 	do {
 		if (!nbuf_alloc(buf, BUFSIZ))
 			goto err;
@@ -103,7 +104,6 @@ bad_handle:
 	}
 #endif
 #endif  /* __SANITIZE_ADDRESS__ */
-	buf->len = 0;
 	return nbuf_load_fd_read(buf, fd);
 }
 #endif
@@ -118,7 +118,8 @@ size_t nbuf_load_fp(struct nbuf_buf *buf, FILE *f)
 	/* generic implementation */
 	int ch;
 
-	nbuf_init_rw(buf, BUFSIZ);
+	if (!nbuf_init_ex(buf, BUFSIZ))
+		return 0;
 	while ((ch = getc(f)) != EOF)
 		if (!nbuf_add1(buf, ch))
 			goto err;

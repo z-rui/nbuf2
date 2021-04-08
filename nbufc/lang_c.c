@@ -526,6 +526,7 @@ int nbufc_codegen_c(const struct nbufc_codegen_opt *opt, struct nbuf_schema_set 
 	const char suffix[] = ".nb.h";
 
 	memset(ctx, 0, sizeof ctx);
+	nbuf_init_ex(&ctx->strbuf, 0);
 	if (!nbuf_get_Schema(&ctx->schema, &ss->buf, 0))
 		goto err;
 	ctx->prefix = nbufc_replace_dots(&ctx->strbuf,
@@ -535,11 +536,10 @@ int nbufc_codegen_c(const struct nbufc_codegen_opt *opt, struct nbuf_schema_set 
 	if (ctx->strbuf.len > 0 && !nbuf_add(&ctx->strbuf, "_", 2)) {
 		ctx->prefix = NULL;
 		goto err;
-	} else {
-		ctx->prefix = ctx->strbuf.base;
 	}
+	ctx->prefix = ctx->strbuf.base;
 	/* steal buffer */
-	memset(&ctx->strbuf, 0, sizeof ctx->strbuf);
+	nbuf_init_ex(&ctx->strbuf, 0);
 	ctx->ss = ss;
 
 	src_name = nbuf_Schema_src_name(ctx->schema, NULL);

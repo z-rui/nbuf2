@@ -207,7 +207,7 @@ parse_repeated_field(struct ctx *ctx, struct nbuf_obj *o, const char *fname,
 		const nbuf_MsgDef *mdef;
 		const nbuf_EnumDef *edef;
 	} u = { typespec };
-	struct nbuf_buf newbuf = {NULL}, *oldbuf = ctx->buf;
+	struct nbuf_buf newbuf, *oldbuf = ctx->buf;
 	struct nbuf_obj oo, it = {ctx->buf};
 	size_t count = 0;
 	bool rc = false;
@@ -215,7 +215,7 @@ parse_repeated_field(struct ctx *ctx, struct nbuf_obj *o, const char *fname,
 	if (nbuf_obj_p(&oo, o, offset)) {
 		nbuf_lexerror(ctx->l,
 			"repeated field '%s' is scattered", fname);
-		goto err;
+		return false;
 	}
 	if (kind == nbuf_Kind_MSG) {
 		it.ssize = nbuf_MsgDef_ssize(*u.mdef);
@@ -237,6 +237,7 @@ parse_repeated_field(struct ctx *ctx, struct nbuf_obj *o, const char *fname,
 		 * on a new buffer so the array can grow on the old buffer.
 		 */
 		ctx->buf = &newbuf;
+		nbuf_init_ex(&newbuf, 0);
 	}
 	for (;;) {
 		++count;
@@ -285,7 +286,8 @@ parse_repeated_field(struct ctx *ctx, struct nbuf_obj *o, const char *fname,
 		goto err;
 	rc = true;
 err:
-	nbuf_clear(&newbuf);
+	if (it.psize > 0)
+		nbuf_clear(&newbuf);
 	ctx->buf = oldbuf;
 	return rc;
 }
@@ -362,6 +364,7 @@ bool nbuf_parse(struct nbuf_parse_opt *opt, struct nbuf_obj *o,
 	bool rc = false;
 	size_t oldlen = ctx->buf->len;
 
+	nbuf_init_ex(&ctx->strbuf, 0);
 	nbuf_lexinit(ctx->l,
 		opt->filename ? opt->filename : "<string>",
 		input, input_len);

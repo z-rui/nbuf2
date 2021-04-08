@@ -3,37 +3,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char *
-nbuf_init_rw(struct nbuf_buf *buf, size_t cap)
-{
-	if (cap == 0)
-		cap = 1;
-	buf->base = (char *) malloc(cap);
-	if (buf->base) {
-		memset(buf->base, 0, cap);
-		buf->len = 0;
-		buf->cap = cap;
-	} else {
-		buf->len = buf->cap = 0;
-	}
-	return buf->base;
-}
-
-void nbuf_clear(struct nbuf_buf *buf)
-{
-	if (buf->cap)
-		free(buf->base);
-	buf->base = NULL;
-	buf->len = buf->cap = 0;
-}
-
-char *nbuf_alloc_ex(struct nbuf_buf *buf, size_t newlen)
+static char *nbuf_alloc_ex(struct nbuf_buf *buf, size_t newlen)
 {
 	size_t newcap;
 	char *newbase;
 
-	/* Buffer must be writable. */
-	assert(!(buf->base != NULL && buf->cap == 0));
+	if (newlen == 0) {
+		free(buf->base);
+		buf->base = NULL;
+		buf->len = buf->cap = 0;
+		return NULL;
+	}
+	assert((buf->base == NULL) == (buf->cap == 0));
 	newcap = buf->cap;
 	if (newcap < sizeof (nbuf_word_t))
 		newcap = sizeof (nbuf_word_t);
@@ -50,6 +31,20 @@ char *nbuf_alloc_ex(struct nbuf_buf *buf, size_t newlen)
 	newbase += buf->len;
 	buf->len = newlen;
 	return newbase;
+}
+
+size_t
+nbuf_init_ex(struct nbuf_buf *buf, size_t cap)
+{
+	buf->base = NULL;
+	buf->len = 0;
+	buf->cap = 0;
+	buf->realloc = nbuf_alloc_ex;
+	if (cap > 0 && (buf->base = (char *) malloc(cap))) {
+		memset(buf->base, 0, cap);
+		buf->cap = cap;
+	}
+	return buf->cap;
 }
 
 size_t

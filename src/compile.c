@@ -114,9 +114,11 @@ new_FileState(struct ctx *ctx, const char *path)
 	struct FileState *fs;
 
 	fs = ADD(struct FileState, *ctx->file_states);
-	fs->filename = path;
-	fs->is_open = true;
-	fs->ss = NULL;
+	if (fs) {
+		fs->filename = path;
+		fs->is_open = true;
+		fs->ss = NULL;
+	}
 	return fs;
 }
 
@@ -331,7 +333,7 @@ parse_field_defs(struct ctx *ctx, lexState *l, nbuf_MsgDef mdef)
 				goto err;
 			/* steal from scratch buffer */
 			*p = s;
-			memset(&ctx->scratch_buf, 0, sizeof ctx->scratch_buf);
+			nbuf_init_ex(&ctx->scratch_buf, 0);
 			import_id = UNRESOLVED_IMPORT_ID;
 		}
 
@@ -640,9 +642,8 @@ parse_opened_file(struct ctx *ctx, struct nbuf_buf *textschema, const char *file
 	struct FileState *fs = NULL;
 	size_t i;
 
-	memset(&binschema, 0, sizeof binschema);
-	memset(&imports, 0, sizeof imports);
-	if (!nbuf_init_rw(&binschema, 4096) ||
+	nbuf_init_ex(&imports, 0);
+	if (!nbuf_init_ex(&binschema, 4096) ||
 		!nbuf_alloc_Schema(&schema, &binschema))
 		goto err;
 	if (!(filename = nbuf_Schema_set_src_name(schema, filename, -1)))
@@ -703,7 +704,6 @@ parse_file(struct ctx *ctx, const char *filename)
 	struct FileState *fs = NULL;
 	struct nbuf_schema_set *ss = NULL;
 
-	memset(&textschema, 0, sizeof textschema);
 	if (++ctx->depth == MAX_DEPTH) {
 		fprintf(stderr, "max import depth (%d) exceeded\n", MAX_DEPTH);
 		goto err;
@@ -730,6 +730,7 @@ parse_file(struct ctx *ctx, const char *filename)
 			 */
 			ss = fs->ss;
 		}
+		fclose(f);
 		goto err;
 	}
 	nbuf_load_fp(&textschema, f);
@@ -748,10 +749,16 @@ void nbuf_free_compiled(const struct nbuf_compile_opt *opt)
 
 static void initctx(struct ctx *ctx, const struct nbuf_compile_opt *opt)
 {
+	size_t i;
+
 	memset(ctx, 0, sizeof *ctx);
 	ctx->buf = ctx->bufs;
 	ctx->file_states = opt->outbuf;
 	ctx->search_path = opt->search_path;
+	for (i = 0; i < MAX_BUFFER; i++)
+		nbuf_init_ex(&ctx->bufs[i], 0);
+	nbuf_init_ex(&ctx->scratch_buf, 0);
+	nbuf_init_ex(&ctx->typenames, 0);
 }
 
 static void finictx(struct ctx *ctx)

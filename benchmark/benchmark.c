@@ -94,7 +94,7 @@ int main()
 	struct nbuf_buf buf;
 	Root root;
 
-	memset(&buf, 0, sizeof buf);
+	nbuf_init_ex(&buf, 0);
 	BENCH(create_serialize(&buf), 100000);
 	nbuf_save_file(&buf, "benchmark.nb.bin");
 	BENCH(deserialize_use(&buf), 100000);

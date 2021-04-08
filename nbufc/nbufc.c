@@ -144,7 +144,7 @@ static int
 encode(struct ctx *ctx, const char *msg_type)
 {
 	nbuf_MsgDef mdef;
-	struct nbuf_buf buf, outbuf;
+	struct nbuf_buf buf = {NULL}, outbuf = {NULL};
 	int rc = 1;
 	nbuf_Schema schema;
 	nbuf_Kind kind;
@@ -155,9 +155,6 @@ encode(struct ctx *ctx, const char *msg_type)
 		.max_depth = 500,
 		.filename = "<stdin>",
 	};
-
-	memset(&buf, 0, sizeof buf);
-	memset(&outbuf, 0, sizeof outbuf);
 
 	if (!nbuf_get_Schema(&schema, &ctx->ss->buf, 0)) {
 		fprintf(stderr, "cannot load schema\n");
@@ -173,7 +170,8 @@ encode(struct ctx *ctx, const char *msg_type)
 		fprintf(stderr, "cannot read input\n");
 		goto err;
 	}
-	nbuf_init_rw(&outbuf, 4096);
+	if (!nbuf_init_ex(&outbuf, 4096))
+		goto err;
 	if (!nbuf_parse(&opt, &dummy, buf.base, buf.len, mdef))
 		goto err;
 #ifdef _WIN32
@@ -214,7 +212,7 @@ int main(int argc, char *argv[])
 	enum {
 		NONE, C_OUT, CPP_OUT, BIN_OUT, DECODE, DECODE_RAW, ENCODE,
 	} action = NONE;
-	struct nbuf_buf outbuf = {NULL};
+	struct nbuf_buf outbuf;
 	struct nbuf_compile_opt opt = {
 		.outbuf = &outbuf,
 	};
@@ -223,6 +221,7 @@ int main(int argc, char *argv[])
 	size_t search_path_count = 0;
 
 	memset(ctx, 0, sizeof ctx);
+	nbuf_init_ex(&outbuf, 0);
 	ctx->progname = *argv++;
 	while ((arg = *argv++)) {
 		if (*arg != '-')

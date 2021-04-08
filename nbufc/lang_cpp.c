@@ -414,6 +414,7 @@ int nbufc_codegen_cpp(const struct nbufc_codegen_opt *opt, struct nbuf_schema_se
 	const char suffix[] = ".nb.hpp";
 
 	memset(ctx, 0, sizeof ctx);
+	nbuf_init_ex(&ctx->strbuf, 0);
 	if (!nbuf_get_Schema(&ctx->schema, &ss->buf, 0))
 		goto err;
 	ctx->ss = ss;

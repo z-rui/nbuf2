@@ -1,6 +1,5 @@
 #include "nbuf_schema.nb.h"
 #include "libnbuf.h"
-#include "libnbufc.h"
 
 static const char textschema[] =
 "/** some long \n"
@@ -91,7 +90,7 @@ static const char test_output[] =
 "p { a: true b: false b: true } "
 "p { a: false c { a: TRUE c: 0 e: 0 g: 0 i: 0 k: 0 m: \"\" } } ";
 
-static struct nbuf_buf compilebuf = {NULL};
+static struct nbuf_buf compilebuf;
 static struct nbuf_compile_opt copt = {
 	.outbuf = &compilebuf,
 };
@@ -99,10 +98,10 @@ static nbuf_Schema schema;
 
 #define TEST_INIT do { \
 	struct nbuf_schema_set *ss; \
+	nbuf_init_ex(&compilebuf, 0); \
 	ss = nbuf_compile_str(&copt, textschema, sizeof textschema - 1, "<string>"); \
 	TEST_ASSERT_(ss != NULL && nbuf_get_Schema(&schema, &ss->buf, 0), \
 		"compiling schema succeeds"); \
-	fprintf(stderr, "%p\n", NBUF_OBJ(schema)->buf); \
 } while (0)
 
 #define TEST_FINI do { \
@@ -121,11 +120,12 @@ static void check_str_leq(const char *a, size_t lena, const char *b, size_t lenb
 
 static void bad_compile_case(const char *case_name, const char *input)
 {
-	struct nbuf_buf buf = {NULL};
+	struct nbuf_buf buf;
 	struct nbuf_compile_opt opt = {
 		.outbuf = &buf,
 	};
 
+	nbuf_init_ex(&buf, 0);
 	TEST_CASE(case_name);
 	TEST_ASSERT_(!nbuf_compile_str(&opt, input, strlen(input), "<string>"),
 		"compile should fail");
@@ -142,7 +142,7 @@ void test_bad_compile(void)
 
 void test_parse_print(void)
 {
-	struct nbuf_buf textbuf = {NULL}, parsebuf = {NULL};
+	struct nbuf_buf textbuf, parsebuf;
 	struct nbuf_parse_opt paopt = {
 		.outbuf = &parsebuf,
 		.filename = "<test input>",
@@ -157,9 +157,9 @@ void test_parse_print(void)
 	nbuf_MsgDef mdef;
 	struct nbuf_obj o;
 
-	fprintf(stderr, "%p\n", NBUF_OBJ(schema)->buf);
 	TEST_ASSERT(nbuf_Schema_messages(&mdef, schema, 0));
 
+	nbuf_init_ex(&parsebuf, 0);
 	TEST_CASE("parse");
 	TEST_ASSERT(nbuf_parse(&paopt, &o, test_input, sizeof test_input - 1, mdef));
 
@@ -168,9 +168,8 @@ void test_parse_print(void)
 	nbuf_clear(&parsebuf);
 	rewind(f);
 	TEST_ASSERT(nbuf_load_fp(&textbuf, f));
-	check_str_leq(textbuf.base, textbuf.len, test_output, sizeof test_output - 1);
-
 	fclose(f);
+	check_str_leq(textbuf.base, textbuf.len, test_output, sizeof test_output - 1);
 	nbuf_unload_file(&textbuf);
 }
 
@@ -188,11 +187,12 @@ static void bad_parse_case(struct nbuf_buf *parsebuf, nbuf_MsgDef mdef, const ch
 
 void test_bad_parse(void)
 {
-	struct nbuf_buf parsebuf = {NULL};
+	struct nbuf_buf parsebuf;
 	nbuf_MsgDef mdef;
 
 	TEST_ASSERT(nbuf_Schema_messages(&mdef, schema, 0));
 
+	nbuf_init_ex(&parsebuf, 0);
 	bad_parse_case(&parsebuf, mdef, "bad enum", "a: true");
 	bad_parse_case(&parsebuf, mdef, "bad number", "c:1d:2");
 	bad_parse_case(&parsebuf, mdef, "bad bool", "o { a: FALSE }");
@@ -212,7 +212,7 @@ void test_bad_parse(void)
 
 void test_depth_limit(void)
 {
-	struct nbuf_buf parsebuf = {NULL};
+	struct nbuf_buf parsebuf;
 	struct nbuf_parse_opt paopt = {
 		.outbuf = &parsebuf,
 		.filename = "<test input>",
@@ -224,7 +224,7 @@ void test_depth_limit(void)
 	TEST_ASSERT(nbuf_Schema_messages(&mdef, schema, 0));
 	TEST_ASSERT(nbuf_Schema_messages(&mdef1, schema, 1));
 
-	TEST_CASE("parse");
+	nbuf_init_ex(&parsebuf, 0);
 	TEST_CHECK(!nbuf_parse(&paopt, &o, test_input, sizeof test_input - 1, mdef));
 
 	paopt.max_depth = 4;

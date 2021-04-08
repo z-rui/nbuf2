@@ -33,7 +33,7 @@ static void write_msg(void)
 	LogFile logfile;
 	logging_LogEntry entries;
 
-	nbuf_init_rw(&buf, 4096);
+	nbuf_init_ex(&buf, 4096);
 	alloc_LogFile(&logfile, &buf);
 	LogFile_alloc_log_entry(&entries, logfile, TOTAL_LOGS);
 
