@@ -180,22 +180,14 @@ parse_single_field(struct ctx *ctx, struct nbuf_obj *o, const char *fname, nbuf_
 	} else if (kind == nbuf_Kind_ENUM) {
 		void *ptr = nbuf_obj_s(o, offset, 2);
 
+		assert(ptr != NULL);
 		EXPECT_C(':'); NEXT;
-		if (!ptr) {
-			fprintf(stderr, "internal error: cannot get scalar pointer "
-				"at offset %u\n", offset);
-			goto err;
-		}
 		if (!parse_enum(ctx, ptr, *u.edef))
 			goto err;
 	} else {  /* scalar */
 		void *ptr = nbuf_obj_s(o, offset, typespec->ssize);
 
-		if (!ptr) {
-			fprintf(stderr, "internal error: cannot get scalar pointer "
-				"at offset %u\n", offset);
-			goto err;
-		}
+		assert(ptr != NULL);
 		EXPECT_C(':'); NEXT;
 		if (!parse_scalar(ctx, ptr, kind, typespec->ssize))
 			goto err;
