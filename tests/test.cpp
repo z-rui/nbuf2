@@ -25,7 +25,6 @@ static void write_msg()
 {
 	int i = 0;
 	nbuf::buffer buf;
-	LogFile logfile;
 
 	nbuf_init_rw(&buf, 4096);
 	auto log_file = LogFile::alloc(&buf);
@@ -54,7 +53,6 @@ static void write_msg()
 static void read_msg()
 {
 	nbuf::buffer buf;
-	size_t n;
 
 	fprintf(stderr, "loading log from %s\n", OUTPUT);
 	nbuf_load_file(&buf, OUTPUT);
