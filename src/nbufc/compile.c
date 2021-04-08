@@ -345,7 +345,6 @@ parse_message_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 	size_t count = 0;
 	nbuf_MsgDef mdef;
 	bool rc = false;
-	struct nbuf_buf *oldbuf = ctx->buf;
 
 	while (IS_ID("message")) {
 		struct nbuf_obj o;
@@ -386,9 +385,6 @@ parse_message_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 	}
 	rc = true;
 err:
-	if (ctx->buf > oldbuf)
-		(ctx->buf--)->len = 0;
-	assert(ctx->buf == oldbuf);
 	return rc;
 }
 
@@ -466,7 +462,6 @@ parse_enum_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 	nbuf_EnumDef edef;
 	bool rc = false;
 	long value = 0;
-	struct nbuf_buf *oldbuf = ctx->buf;
 
 	while (IS_ID("enum")) {
 		struct nbuf_obj o;
@@ -508,9 +503,6 @@ parse_enum_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 	}
 	rc = true;
 err:
-	if (ctx->buf > oldbuf)
-		(ctx->buf--)->len = 0;
-	assert(ctx->buf == oldbuf);
 	return rc;
 }
 
