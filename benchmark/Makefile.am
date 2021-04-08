@@ -1,5 +1,5 @@
 AM_CPPFLAGS = -I$(srcdir)/../src
-NBUFC=../src/nbufc/nbufc
+NBUFC=../nbufc/nbufc
 
 noinst_PROGRAMS = benchmark
 EXTRA_DIST = benchmark.nbuf

@@ -333,7 +333,7 @@ static void out_inc(struct ctx *ctx)
 
 		nbuf_get_Schema(&schema, &(*import)->buf, 0);
 		src_name = nbuf_Schema_src_name(schema, NULL);
-		basename_len = nbufc_baselen(src_name);
+		basename_len = nbuf_baselen(src_name);
 		fprintf(ctx->f, "#include \"%.*s.nb.hpp\"\n",
 			(int) basename_len, src_name);
 	}
@@ -419,7 +419,7 @@ int nbufc_codegen_cpp(const struct nbufc_codegen_opt *opt, struct nbuf_schema_se
 	ctx->ss = ss;
 
 	src_name = nbuf_Schema_src_name(ctx->schema, NULL);
-	n = nbufc_baselen(src_name);
+	n = nbuf_baselen(src_name);
 
 	/* .nb.hpp */
 	out_filename = (char *) malloc(n + sizeof suffix);

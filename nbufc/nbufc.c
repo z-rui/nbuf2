@@ -43,7 +43,7 @@ static char *construct_out_filename(const char *in_filename, const char *suffix)
 	char *p;
 	size_t len;
 
-	len = nbufc_baselen(in_filename);
+	len = nbuf_baselen(in_filename);
 	p = (char *) malloc(len + strlen(suffix) + 1);
 	if (!p)
 		return NULL;
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 		NONE, C_OUT, CPP_OUT, BIN_OUT, DECODE, DECODE_RAW, ENCODE,
 	} action = NONE;
 	struct nbuf_buf outbuf = {NULL};
-	struct nbufc_compile_opt opt = {
+	struct nbuf_compile_opt opt = {
 		.outbuf = &outbuf,
 	};
 	int rc = 1;
@@ -263,7 +263,7 @@ end_of_opt:
 	}
 	search_path[search_path_count] = NULL;
 	opt.search_path = search_path;
-	ctx->ss = nbufc_compile(&opt, arg);
+	ctx->ss = nbuf_compile(&opt, arg);
 	if (!ctx->ss) {
 		fprintf(stderr, "%s: compilation failed\n", arg);
 		goto out;
@@ -294,6 +294,6 @@ skip_schema:
 		break;
 	}
 out:
-	nbufc_free_compiled(&opt);
+	nbuf_free_compiled(&opt);
 	return rc;
 }

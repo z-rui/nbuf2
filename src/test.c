@@ -92,21 +92,21 @@ static const char test_output[] =
 "p { a: false c { a: TRUE c: 0 e: 0 g: 0 i: 0 k: 0 m: \"\" } } ";
 
 static struct nbuf_buf compilebuf = {NULL};
-static struct nbufc_compile_opt copt = {
+static struct nbuf_compile_opt copt = {
 	.outbuf = &compilebuf,
 };
 static nbuf_Schema schema;
 
 #define TEST_INIT do { \
 	struct nbuf_schema_set *ss; \
-	ss = nbufc_compile_str(&copt, textschema, sizeof textschema - 1, "<string>"); \
+	ss = nbuf_compile_str(&copt, textschema, sizeof textschema - 1, "<string>"); \
 	TEST_ASSERT_(ss != NULL && nbuf_get_Schema(&schema, &ss->buf, 0), \
 		"compiling schema succeeds"); \
 	fprintf(stderr, "%p\n", NBUF_OBJ(schema)->buf); \
 } while (0)
 
 #define TEST_FINI do { \
-	nbufc_free_compiled(&copt); \
+	nbuf_free_compiled(&copt); \
 } while (0)
 
 #include "acutest.h"
@@ -122,12 +122,12 @@ static void check_str_leq(const char *a, size_t lena, const char *b, size_t lenb
 static void bad_compile_case(const char *case_name, const char *input)
 {
 	struct nbuf_buf buf = {NULL};
-	struct nbufc_compile_opt opt = {
+	struct nbuf_compile_opt opt = {
 		.outbuf = &buf,
 	};
 
 	TEST_CASE(case_name);
-	TEST_ASSERT_(!nbufc_compile_str(&opt, input, strlen(input), "<string>"),
+	TEST_ASSERT_(!nbuf_compile_str(&opt, input, strlen(input), "<string>"),
 		"compile should fail");
 	TEST_CHECK(buf.base == NULL);
 }

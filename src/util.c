@@ -313,3 +313,15 @@ char_esc:
 	putc('"', f);
 }
 
+size_t nbuf_baselen(const char *p)
+{
+	const char *s, *dot = NULL;
+
+	for (s = p; *s; ++s) {
+		if (*s == '/')
+			dot = NULL;
+		else if (*s == '.')
+			dot = s;
+	}
+	return (dot ? dot : s) - p;
+}

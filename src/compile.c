@@ -1,9 +1,7 @@
 #include "nbuf.h"
 #include "nbuf_schema.nb.h"
 #include "lex.h"
-#include "util.h"
 #include "libnbuf.h"
-#include "libnbufc.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -34,6 +32,45 @@
 	FOR_EACH(typ, _p, _n, f) dtor(_p); \
 	nbuf_clear(&f); \
 } while (0)
+
+static FILE *
+nbuf_search_open(struct nbuf_buf *buf,
+	const char *const dirs[], const char *filename)
+{
+	size_t filename_len = strlen(filename);
+	const char *dir;
+	size_t last_dir_len = 0;
+	FILE *f;
+
+	buf->len = 0;
+	if (!nbuf_alloc(buf, filename_len + 1))
+		return NULL;
+	memcpy(buf->base, filename, filename_len + 1);
+	if ((f = fopen(buf->base, "r")) != NULL)
+		return f;
+	if (filename[0] == '/' || !dirs)
+		return NULL;
+	while ((dir = *dirs++) != NULL) {
+		size_t dir_len = strlen(dir);
+		size_t newlen;
+
+		if (dir_len && dir[dir_len-1] == '/')
+			--dir_len;
+		newlen = dir_len + filename_len + 2;
+		if (newlen > buf->len && !nbuf_alloc(buf, newlen - buf->len))
+			return NULL;
+		buf->len = newlen;
+		memmove(buf->base + dir_len + 1, buf->base + last_dir_len, filename_len + 1);
+		memcpy(buf->base, dir, dir_len);
+		buf->base[dir_len] = '/';
+		last_dir_len = dir_len + 1;  /* including trailing '/' */
+		if ((f = fopen(buf->base, "r")) != NULL)
+			break;
+	}
+	/* keep only the filename */
+	memmove(buf->base, buf->base + last_dir_len, filename_len + 1);
+	return f;
+}
 
 struct FileState {
 	const char *filename;
@@ -208,7 +245,7 @@ err:
 
 static bool resolve_type(struct nbuf_schema_set *ss, const char *name, nbuf_Kind *kind, unsigned *import_id, unsigned *type_id)
 {
-	size_t len = nbufc_baselen(name);
+	size_t len = nbuf_baselen(name);
 	size_t i;
 	nbuf_Schema schema;
 	const char *pkg_name;
@@ -671,7 +708,7 @@ parse_file(struct ctx *ctx, const char *filename)
 		fprintf(stderr, "max import depth (%d) exceeded\n", MAX_DEPTH);
 		goto err;
 	}
-	f = nbufc_search_open(&ctx->scratch_buf, ctx->search_path, filename);
+	f = nbuf_search_open(&ctx->scratch_buf, ctx->search_path, filename);
 	/* filename may be in scratch_buf, and it may have been re-allocated. */
 	filename = ctx->scratch_buf.base;
 	if (!f) {
@@ -704,12 +741,12 @@ err:
 	return ss;
 }
 
-void nbufc_free_compiled(const struct nbufc_compile_opt *opt)
+void nbuf_free_compiled(const struct nbuf_compile_opt *opt)
 {
 	CLR(struct FileState, *opt->outbuf, dtor_FileState);
 }
 
-static void initctx(struct ctx *ctx, const struct nbufc_compile_opt *opt)
+static void initctx(struct ctx *ctx, const struct nbuf_compile_opt *opt)
 {
 	memset(ctx, 0, sizeof *ctx);
 	ctx->buf = ctx->bufs;
@@ -729,7 +766,7 @@ static void finictx(struct ctx *ctx)
 }
 
 struct nbuf_schema_set *
-nbufc_compile(const struct nbufc_compile_opt *opt, const char *filename)
+nbuf_compile(const struct nbuf_compile_opt *opt, const char *filename)
 {
 	struct ctx ctx[1];
 	struct nbuf_schema_set *ss = NULL;
@@ -739,12 +776,12 @@ nbufc_compile(const struct nbufc_compile_opt *opt, const char *filename)
 	finictx(ctx);
 
 	if (!ss)
-		nbufc_free_compiled(opt);
+		nbuf_free_compiled(opt);
 	return ss;
 }
 
 struct nbuf_schema_set *
-nbufc_compile_str(const struct nbufc_compile_opt *opt,
+nbuf_compile_str(const struct nbuf_compile_opt *opt,
 	const char *input, size_t len, const char *filename)
 {
 	struct ctx ctx[1];
@@ -757,6 +794,6 @@ nbufc_compile_str(const struct nbufc_compile_opt *opt,
 	finictx(ctx);
 
 	if (!ss)
-		nbufc_free_compiled(opt);
+		nbuf_free_compiled(opt);
 	return ss;
 }

@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = src
-DIST_SUBDIRS = src benchmark tests
+SUBDIRS = src nbufc
+DIST_SUBDIRS = src nbufc benchmark tests
 EXTRA_DIST = README.md doc

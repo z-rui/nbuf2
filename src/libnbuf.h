@@ -133,6 +133,33 @@ size_t nbuf_unescape(struct nbuf_buf *buf, const char *s, size_t len);
 #define NBUF_PRINT_LOOSE_ESCAPE 0x80000000U
 void nbuf_print_escaped(FILE *f, const char *s, size_t len, unsigned flags);
 
+/* Schema compiler: compile a text schema into a nbuf.Schema object
+ * in the buffer. */
+struct nbuf_compile_opt {
+	/* Storage for compiler output.
+	 * Free with nbuf_free_compiled */
+	struct nbuf_buf *outbuf;
+	/* NULL-terminated search paths.
+	 * The provided filename is tried first.
+	 * If filename begins with '/', no other attempts are made.
+	 * Otherwise, if it cannot be opened, then each search path
+	 * is prepended to the filename.  The first successfully opened
+	 * file will be compiled.
+	 *
+	 * Set this to NULL will disable import statements.
+	 */
+	const char *const *search_path;
+};
+struct nbuf_schema_set *
+nbuf_compile(const struct nbuf_compile_opt *opt, const char *filename);
+struct nbuf_schema_set *
+nbuf_compile_str(const struct nbuf_compile_opt *opt,
+	const char *input, size_t input_len, const char *filename);
+/* Frees memory for the schema set returned from compiler. */
+void nbuf_free_compiled(const struct nbuf_compile_opt *opt);
+
+size_t nbuf_baselen(const char *p);
+
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif
