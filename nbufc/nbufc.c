@@ -279,6 +279,9 @@ skip_schema:
 		rc = bin_out(ctx, arg);
 		break;
 	case DECODE_RAW:
+#ifdef _WIN32
+		_setmode(_fileno(stdin), _O_BINARY);
+#endif
 		rc = nbufc_decode_raw(stdout, stdin);
 		break;
 	case DECODE:
