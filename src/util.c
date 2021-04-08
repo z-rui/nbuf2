@@ -106,7 +106,7 @@ size_t nbuf_load_fd(struct nbuf_buf *buf, int fd)
 		if (buf->base == NULL)
 			goto bad_handle;
 #elif HAVE_MMAP
-		buf->base = mmap(NULL, buf->len, PROT_READ, MAP_SHARED, fd, 0);
+		buf->base = mmap(NULL, statbuf.st_size, PROT_READ, MAP_SHARED, fd, 0);
 		if (buf->base == MAP_FAILED) {
 			perror("mmap");
 			buf->base = NULL;
