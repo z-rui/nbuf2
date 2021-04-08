@@ -58,7 +58,7 @@ static void write_msg(void)
 			logging_LogSeverity_INFO);
 		usleep(1000);
 	}
-	fprintf(stderr, "dumping log to %s\n", OUTPUT);
+	fprintf(stderr, "dumping log to %s, size = %zu\n", OUTPUT, buf.len);
 	nbuf_save_file(&buf, OUTPUT);
 	nbuf_clear(&buf);
 }
@@ -71,8 +71,8 @@ static void read_msg(void)
 	logging_LogEntry entry;
 	size_t n;
 
-	fprintf(stderr, "loading log from %s\n", OUTPUT);
 	nbuf_load_file(&buf, OUTPUT);
+	fprintf(stderr, "loading log from %s, size = %zu\n", OUTPUT, buf.len);
 	get_LogFile(&logfile, &buf, 0);
 	n = LogFile_log_entry(&entry, logfile, 0);
 

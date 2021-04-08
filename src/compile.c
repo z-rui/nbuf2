@@ -122,8 +122,6 @@ new_FileState(struct ctx *ctx, const char *path)
 	return fs;
 }
 
-#define NEXT_BUF (assert(ctx->buf < ctx->bufs + MAX_BUFFER), ctx->buf++)
-
 #define NEXT ctx->token = nbuf_lex(l)
 #define IS_C(X) (ctx->token == X)
 #define IS(X) IS_C(Token_##X)
@@ -301,20 +299,18 @@ parse_field_defs(struct ctx *ctx, lexState *l, nbuf_MsgDef mdef)
 	size_t count = 0;
 	nbuf_FieldDef fdef;
 	bool rc = false;
-	struct nbuf_buf *oldbuf = ctx->buf;
 
-	while (IS(ID)) {
+	EXPECT(ID);
+	if (!nbuf_alloc_multi_FieldDef(&fdef, ctx->buf, 1))
+		return false;
+	++ctx->buf;
+	assert(ctx->buf < ctx->bufs + MAX_BUFFER);
+	for (;;) {
 		struct nbuf_obj o;
 		char *s, **p;
 		unsigned import_id = 0, type_id = 0;
-		bool ok;
 		nbuf_Kind kind = nbuf_Kind_VOID;
 
-		ok = (count++ == 0) ? 
-			(bool) nbuf_alloc_multi_FieldDef(&fdef, NEXT_BUF, 1) :
-			(bool) nbuf_alloc(NBUF_OBJ(fdef)->buf, nbuf_obj_size(NBUF_OBJ(fdef)));
-		if (!ok)
-			goto err;
 		// Record the line number, for better error reporting.
 		nbuf_FieldDef_set_offset(fdef, l->lineno);
 		if (!(s = parse_fqn(ctx, l)))
@@ -353,12 +349,14 @@ parse_field_defs(struct ctx *ctx, lexState *l, nbuf_MsgDef mdef)
 			goto err;
 		NEXT;
 		EXPECT_C(';'); NEXT;
+		++count;
 		nbuf_next(NBUF_OBJ(fdef));
+		if (!IS(ID))
+			break;
+		if (!nbuf_alloc(NBUF_OBJ(fdef)->buf, nbuf_obj_size(NBUF_OBJ(fdef))))
+			goto err;
 	}
-	if (count == 0) {
-		nbuf_lexerror(l, "empty message");
-		goto err;
-	}
+	assert(count > 0);
 	nbuf_advance(NBUF_OBJ(fdef), -count);
 	if (!nbuf_resize_arr(NBUF_OBJ(fdef), count) ||
 		!nbuf_fix_arr(NBUF_OBJ(fdef), count, ctx->buf)) {
@@ -371,9 +369,7 @@ parse_field_defs(struct ctx *ctx, lexState *l, nbuf_MsgDef mdef)
 	}
 	rc = true;
 err:
-	if (ctx->buf > oldbuf)
-		(ctx->buf--)->len = 0;
-	assert(ctx->buf == oldbuf);
+	(ctx->buf--)->len = 0;
 	return rc;
 }
 
@@ -385,15 +381,13 @@ parse_message_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 	nbuf_MsgDef mdef;
 	bool rc = false;
 
-	while (IS_ID("message")) {
+	if (!IS_ID("message"))
+		return true;
+	if (!nbuf_alloc_multi_MsgDef(&mdef, NBUF_OBJ(schema)->buf, 1))
+		return false;
+	for (;;) {
 		struct nbuf_obj o;
-		bool ok;
 
-		ok = (count++ == 0) ? 
-			(bool) nbuf_alloc_multi_MsgDef(&mdef, NBUF_OBJ(schema)->buf, 1) :
-			(bool) nbuf_alloc(NBUF_OBJ(mdef)->buf, nbuf_obj_size(NBUF_OBJ(mdef)));
-		if (!ok)
-			goto err;
 		NEXT;
 		EXPECT(ID);
 		o.buf = ctx->buf;
@@ -408,22 +402,27 @@ parse_message_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 		if (!parse_field_defs(ctx, l, mdef))
 			goto err;
 		EXPECT_C('}'); NEXT;
+		++count;
 		nbuf_next(NBUF_OBJ(mdef));
+		if (!IS_ID("message"))
+			break;
+		if (!nbuf_alloc(NBUF_OBJ(mdef)->buf, nbuf_obj_size(NBUF_OBJ(mdef))))
+			goto err;
 	}
-	if (count > 0) {
-		nbuf_advance(NBUF_OBJ(mdef), -count);
-		if (!nbuf_resize_arr(NBUF_OBJ(mdef), count) ||
-			!nbuf_fix_arr(NBUF_OBJ(mdef), count, ctx->buf)) {
-			fprintf(stderr, "internal error: cannot resize Schema.messages\n");
-			goto err;
-		}
-		if (!nbuf_Schema_set_raw_messages(schema, NBUF_OBJ(mdef))) {
-			assert(0 && "cannot set Schema.messages");
-			goto err;
-		}
+	assert(count > 0);
+	nbuf_advance(NBUF_OBJ(mdef), -count);
+	if (!nbuf_resize_arr(NBUF_OBJ(mdef), count) ||
+		!nbuf_fix_arr(NBUF_OBJ(mdef), count, ctx->buf)) {
+		fprintf(stderr, "internal error: cannot resize Schema.messages\n");
+		goto err;
+	}
+	if (!nbuf_Schema_set_raw_messages(schema, NBUF_OBJ(mdef))) {
+		assert(0 && "cannot set Schema.messages");
+		goto err;
 	}
 	rc = true;
 err:
+	ctx->buf->len = 0;
 	return rc;
 }
 
@@ -433,18 +432,15 @@ parse_enum_vals(struct ctx *ctx, lexState *l, nbuf_EnumDef edef, long *value)
 	size_t count = 0;
 	nbuf_EnumVal eval;
 	bool rc = false;
-	struct nbuf_buf *oldbuf = ctx->buf;
 
 	EXPECT(ID);
-	do {
+	if (!nbuf_alloc_multi_EnumVal(&eval, ctx->buf, 1))
+		return false;
+	++ctx->buf;
+	assert(ctx->buf < ctx->bufs + MAX_BUFFER);
+	for (;;) {
 		struct nbuf_obj o;
-		bool ok;
 
-		ok = (count++ == 0) ? 
-			(bool) nbuf_alloc_multi_EnumVal(&eval, NEXT_BUF, 1) :
-			(bool) nbuf_alloc(NBUF_OBJ(eval)->buf, nbuf_obj_size(NBUF_OBJ(eval)));
-		if (!ok)
-			goto err;
 		o.buf = ctx->buf;
 		if (!nbuf_alloc_str(&o, TOKEN(l), TOKENLEN(l)))
 			goto err;
@@ -468,11 +464,16 @@ parse_enum_vals(struct ctx *ctx, lexState *l, nbuf_EnumDef edef, long *value)
 			goto err;
 		}
 		++*value;
+		++count;
 		nbuf_next(NBUF_OBJ(eval));
 		if (!IS_C(','))
 			break;
 		NEXT;
-	} while (IS(ID));
+		if (!IS(ID))
+			break;
+		if (!nbuf_alloc(NBUF_OBJ(eval)->buf, nbuf_obj_size(NBUF_OBJ(eval))))
+			goto err;
+	}
 	assert(count > 0);
 	nbuf_advance(NBUF_OBJ(eval), -count);
 	if (!nbuf_resize_arr(NBUF_OBJ(eval), count) ||
@@ -486,9 +487,7 @@ parse_enum_vals(struct ctx *ctx, lexState *l, nbuf_EnumDef edef, long *value)
 	}
 	rc = true;
 err:
-	if (ctx->buf > oldbuf)
-		(ctx->buf--)->len = 0;
-	assert(ctx->buf == oldbuf);
+	(ctx->buf--)->len = 0;
 	return rc;
 }
 
@@ -502,15 +501,13 @@ parse_enum_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 	bool rc = false;
 	long value = 0;
 
-	while (IS_ID("enum")) {
+	if (!IS_ID("enum"))
+		return true;
+	if (!nbuf_alloc_multi_EnumDef(&edef, NBUF_OBJ(schema)->buf, 1))
+		return false;
+	for (;;) {
 		struct nbuf_obj o;
-		bool ok;
 
-		ok = (count++ == 0) ? 
-			(bool) nbuf_alloc_multi_EnumDef(&edef, NBUF_OBJ(schema)->buf, 1) :
-			(bool) nbuf_alloc(NBUF_OBJ(edef)->buf, nbuf_obj_size(NBUF_OBJ(edef)));
-		if (!ok)
-			goto err;
 		NEXT;
 		EXPECT(ID);
 		o.buf = ctx->buf;
@@ -522,26 +519,30 @@ parse_enum_defs(struct ctx *ctx, lexState *l, nbuf_Schema schema)
 		}
 		NEXT;
 		EXPECT_C('{'); NEXT;
-		ok = parse_enum_vals(ctx, l, edef, &value);
-		if (!ok)
+		if (!parse_enum_vals(ctx, l, edef, &value))
 			goto err;
 		EXPECT_C('}'); NEXT;
+		++count;
 		nbuf_next(NBUF_OBJ(edef));
+		if (!IS_ID("enum"))
+			break;
+		if (!nbuf_alloc(NBUF_OBJ(edef)->buf, nbuf_obj_size(NBUF_OBJ(edef))))
+			goto err;
 	}
-	if (count > 0) {
-		nbuf_advance(NBUF_OBJ(edef), -count);
-		if (!nbuf_resize_arr(NBUF_OBJ(edef), count) ||
-			!nbuf_fix_arr(NBUF_OBJ(edef), count, ctx->buf)) {
-			fprintf(stderr, "internal error: cannot resize Schema.enums\n");
-			goto err;
-		}
-		if (!nbuf_Schema_set_raw_enums(schema, NBUF_OBJ(edef))) {
-			assert(0 && "cannot set Schema.enums");
-			goto err;
-		}
+	assert(count > 0);
+	nbuf_advance(NBUF_OBJ(edef), -count);
+	if (!nbuf_resize_arr(NBUF_OBJ(edef), count) ||
+		!nbuf_fix_arr(NBUF_OBJ(edef), count, ctx->buf)) {
+		fprintf(stderr, "internal error: cannot resize Schema.enums\n");
+		goto err;
+	}
+	if (!nbuf_Schema_set_raw_enums(schema, NBUF_OBJ(edef))) {
+		assert(0 && "cannot set Schema.enums");
+		goto err;
 	}
 	rc = true;
 err:
+	ctx->buf->len = 0;
 	return rc;
 }
 
@@ -575,7 +576,7 @@ static bool complete_message_defs(struct ctx *ctx, nbuf_Schema schema)
 				if (import_id == UNRESOLVED_IMPORT_ID) {
 					unsigned lineno = nbuf_FieldDef_offset(fdef);
 
-					fprintf(stderr, "%s:%u: cannot resolve typename '%s'\n",
+					fprintf(stderr, "error:%s:%u: cannot resolve typename '%s'\n",
 						nbuf_Schema_src_name(schema, NULL),
 						lineno, typenam);
 					goto err;
