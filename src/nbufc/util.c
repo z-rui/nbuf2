@@ -55,9 +55,11 @@ FILE *nbufc_search_open(struct nbuf_buf *buf, const char *const dirs[], const ch
 		memmove(buf->base + dir_len + 1, buf->base + last_dir_len, filename_len + 1);
 		memcpy(buf->base, dir, dir_len);
 		buf->base[dir_len] = '/';
-		if ((f = fopen(buf->base, "r")) != NULL)
-			return f;
 		last_dir_len = dir_len + 1;  /* including trailing '/' */
+		if ((f = fopen(buf->base, "r")) != NULL)
+			break;
 	}
-	return NULL;
+	/* keep only the filename */
+	memmove(buf->base, buf->base + last_dir_len, filename_len + 1);
+	return f;
 }

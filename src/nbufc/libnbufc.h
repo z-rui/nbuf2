@@ -24,6 +24,9 @@ struct nbufc_compile_opt {
 };
 struct nbuf_schema_set *
 nbufc_compile(const struct nbufc_compile_opt *opt, const char *filename);
+struct nbuf_schema_set *
+nbufc_compile_str(const struct nbufc_compile_opt *opt,
+	const char *input, size_t input_len, const char *filename);
 /* Frees memory for the schema set returned from compiler. */
 void nbufc_free_compiled(const struct nbufc_compile_opt *opt);
 

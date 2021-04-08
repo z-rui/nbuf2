@@ -72,7 +72,7 @@ struct ctx {
 };
 
 static struct FileState *
-new_FileState(struct ctx *ctx, FILE *f, const char *path)
+new_FileState(struct ctx *ctx, const char *path)
 {
 	struct FileState *fs;
 
@@ -599,68 +599,31 @@ find_known_file(struct ctx *ctx, FILE *f, const char *path)
 	return NULL;
 }
 
-struct nbuf_schema_set *
-parse_file(struct ctx *ctx, const char *filename)
+static struct nbuf_schema_set *
+parse_opened_file(struct ctx *ctx, struct nbuf_buf *textschema, const char *filename)
 {
 	lexState l[1];
 	nbuf_Schema schema;
-	struct nbuf_buf textschema;  // load_file
 	struct nbuf_buf binschema;
 	struct nbuf_buf imports;
 	bool rc = false;
 	struct nbuf_schema_set *ss = NULL;
 	struct FileState *fs = NULL;
 	size_t i;
-	FILE *f = NULL;
 
-	memset(&textschema, 0, sizeof textschema);
 	memset(&binschema, 0, sizeof binschema);
 	memset(&imports, 0, sizeof imports);
-	if (++ctx->depth == MAX_DEPTH) {
-		fprintf(stderr, "max import depth (%d) exceeded\n", MAX_DEPTH);
+	if (!nbuf_init_rw(&binschema, 4096) ||
+		!nbuf_alloc_Schema(&schema, &binschema))
 		goto err;
-	}
-	if (!nbuf_init_rw(&binschema, 4096))
+	if (!(filename = nbuf_Schema_set_src_name(schema, filename, -1)))
 		goto err;
-	if (!nbuf_alloc_Schema(&schema, &binschema))
-		goto err;
-	if (!nbuf_Schema_set_src_name(schema, filename, -1))
-		goto err;
-	filename = nbuf_Schema_src_name(schema, NULL);
 	/* filename is now persistent (no longer in scratch_buf) */
-	f = nbufc_search_open(&ctx->scratch_buf, ctx->search_path, filename);
-	if (!f) {
-		fprintf(stderr, "file '%s' cannot be found.\n", filename);
-		goto err;
-	}
-	if ((fs = find_known_file(ctx, f, filename))) {
-		struct FileState *fs_end = GET(struct FileState, *ctx->file_states,
-						LEN(struct FileState, *ctx->file_states));
-		if (fs->is_open) {
-			fprintf(stderr, "error: circular dependency: ");
-			do {
-				fprintf(stderr, "%s -> ", fs->filename);
-			} while (++fs < fs_end);
-			fprintf(stderr, "%s\n", filename);
-			fs = NULL;
-		} else {
-			/* not circular dependency, we will reuse the previously
-			 * parsed result.
-			 */
-			ss = fs->ss;
-			rc = true;
-		}
-		goto err;
-	}
-	if (!nbuf_load_fp(&textschema, f))
-		goto err;
 	i = LEN(struct FileState, *ctx->file_states);
-	if (!(fs = new_FileState(ctx, f, filename)))
+	if (!(fs = new_FileState(ctx, filename)))
 		goto err;
-	fclose(f);
-	f = NULL;
-	nbuf_lexinit(l, filename, textschema.base, textschema.len);
-	NEXT;
+	nbuf_lexinit(l, filename, textschema->base, textschema->len);
+	NEXT;  /* get the first token from input */
 	if (!parse_package(ctx, l, schema))
 		goto err;
 	rc = parse_import(ctx, l, &imports);
@@ -696,15 +659,55 @@ parse_file(struct ctx *ctx, const char *filename)
 		goto err;
 	rc = true;
 err:
-	if (!rc)
-		ss = NULL;
 	if (fs)
 		fs->is_open = false;
-	if (f)
-		fclose(f);
 	nbuf_clear(&imports);
 	nbuf_clear(&binschema);
+	return rc ? ss : NULL;
+}
+
+struct nbuf_schema_set *
+parse_file(struct ctx *ctx, const char *filename)
+{
+	struct nbuf_buf textschema;  // load_file
+	FILE *f = NULL;
+	struct FileState *fs = NULL;
+	struct nbuf_schema_set *ss = NULL;
+
+	memset(&textschema, 0, sizeof textschema);
+	if (++ctx->depth == MAX_DEPTH) {
+		fprintf(stderr, "max import depth (%d) exceeded\n", MAX_DEPTH);
+		goto err;
+	}
+	f = nbufc_search_open(&ctx->scratch_buf, ctx->search_path, filename);
+	/* filename may be in scratch_buf, and it may have been re-allocated. */
+	filename = ctx->scratch_buf.base;
+	if (!f) {
+		fprintf(stderr, "file '%s' cannot be found.\n", filename);
+		goto err;
+	}
+	if ((fs = find_known_file(ctx, f, filename))) {
+		struct FileState *fs_end = GET(struct FileState, *ctx->file_states,
+						LEN(struct FileState, *ctx->file_states));
+		if (fs->is_open) {
+			fprintf(stderr, "error: circular dependency: ");
+			do {
+				fprintf(stderr, "%s -> ", fs->filename);
+			} while (++fs < fs_end);
+			fprintf(stderr, "%s\n", filename);
+		} else {
+			/* not circular dependency, we will reuse the previously
+			 * parsed result.
+			 */
+			ss = fs->ss;
+		}
+		goto err;
+	}
+	nbuf_load_fp(&textschema, f);
+	fclose(f);
+	ss = parse_opened_file(ctx, &textschema, filename);
 	nbuf_unload_file(&textschema);
+err:
 	--ctx->depth;
 	return ss;
 }
@@ -714,24 +717,53 @@ void nbufc_free_compiled(const struct nbufc_compile_opt *opt)
 	CLR(struct FileState, *opt->outbuf, dtor_FileState);
 }
 
-struct nbuf_schema_set *
-nbufc_compile(const struct nbufc_compile_opt *opt, const char *filename)
+static void initctx(struct ctx *ctx, const struct nbufc_compile_opt *opt)
 {
-	struct ctx ctx[1];
-	struct nbuf_schema_set *ss = NULL;
-	size_t i;
-
-	memset(ctx, 0, sizeof ctx);
+	memset(ctx, 0, sizeof *ctx);
 	ctx->buf = ctx->bufs;
 	ctx->file_states = opt->outbuf;
 	ctx->search_path = opt->search_path;
-	ss = parse_file(ctx, filename);
+}
+
+static void finictx(struct ctx *ctx)
+{
+	size_t i;
 
 	/* Clean up resources. */
 	nbuf_clear(&ctx->typenames);
 	nbuf_clear(&ctx->scratch_buf);
 	for (i = 0; i < MAX_BUFFER; i++)
 		nbuf_clear(&ctx->bufs[i]);
+}
+
+struct nbuf_schema_set *
+nbufc_compile(const struct nbufc_compile_opt *opt, const char *filename)
+{
+	struct ctx ctx[1];
+	struct nbuf_schema_set *ss = NULL;
+
+	initctx(ctx, opt);
+	ss = parse_file(ctx, filename);
+	finictx(ctx);
+
+	if (!ss)
+		nbufc_free_compiled(opt);
+	return ss;
+}
+
+struct nbuf_schema_set *
+nbufc_compile_str(const struct nbufc_compile_opt *opt,
+	const char *input, size_t len, const char *filename)
+{
+	struct ctx ctx[1];
+	struct nbuf_schema_set *ss = NULL;
+	struct nbuf_buf textschema;
+
+	initctx(ctx, opt);
+	nbuf_init_ro(&textschema, input, len);
+	ss = parse_opened_file(ctx, &textschema, filename);
+	finictx(ctx);
+
 	if (!ss)
 		nbufc_free_compiled(opt);
 	return ss;

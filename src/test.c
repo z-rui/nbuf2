@@ -1,10 +1,6 @@
-#include "acutest.h"
-
 #include "nbuf_schema.nb.h"
 #include "libnbuf.h"
 #include "libnbufc.h"
-
-static const char schema_file[] = "test.nbuf";
 
 static const char textschema[] =
 "/** some long \n"
@@ -95,6 +91,26 @@ static const char test_output[] =
 "p { a: true b: false b: true } "
 "p { a: false c { a: TRUE c: 0 e: 0 g: 0 i: 0 k: 0 m: \"\" } } ";
 
+static struct nbuf_buf compilebuf = {NULL};
+static struct nbufc_compile_opt copt = {
+	.outbuf = &compilebuf,
+};
+static nbuf_Schema schema;
+
+#define TEST_INIT do { \
+	struct nbuf_schema_set *ss; \
+	ss = nbufc_compile_str(&copt, textschema, sizeof textschema - 1, "<string>"); \
+	TEST_ASSERT_(ss != NULL && nbuf_get_Schema(&schema, &ss->buf, 0), \
+		"compiling schema succeeds"); \
+	fprintf(stderr, "%p\n", NBUF_OBJ(schema)->buf); \
+} while (0)
+
+#define TEST_FINI do { \
+	nbufc_free_compiled(&copt); \
+} while (0)
+
+#include "acutest.h"
+
 static void check_str_leq(const char *a, size_t lena, const char *b, size_t lenb)
 {
 	if (!TEST_CHECK(lena == lenb && memcmp(a, b, lena) == 0)) {
@@ -103,46 +119,9 @@ static void check_str_leq(const char *a, size_t lena, const char *b, size_t lenb
 	}
 }
 
-void test_codegen(void)
-{
-	static struct nbuf_buf textbuf = {
-		.base = (char *) textschema,
-		.len = sizeof textschema - 1,
-	};
-	struct nbuf_schema_set *ss;
-	struct nbuf_buf compilebuf = {NULL};
-	struct nbufc_compile_opt copt = {
-		.outbuf = &compilebuf,
-	};
-	struct nbufc_codegen_opt gopt;
-	nbuf_Schema schema;
-	nbuf_MsgDef mdef;
-
-	memset(&gopt, 0, sizeof gopt);
-	nbuf_save_file(&textbuf, schema_file);
-	ss = nbufc_compile(&copt, schema_file);
-	TEST_ASSERT_(ss != NULL, "compiling %s returns a valid schema set", schema_file);
-	TEST_ASSERT(nbuf_get_Schema(&schema, &ss->buf, 0));
-	TEST_ASSERT(nbuf_Schema_messages(&mdef, schema, 0));
-
-	TEST_CHECK(nbufc_codegen_c(&gopt, ss) == 0);
-	TEST_CHECK(nbufc_codegen_cpp(&gopt, ss) == 0);
-
-	nbufc_free_compiled(&copt);
-}
-
-
 void test_parse_print(void)
 {
-	struct nbuf_buf textbuf = {
-		.base = (char *) textschema,
-		.len = sizeof textschema - 1,
-	};
-	struct nbuf_schema_set *ss;
-	struct nbuf_buf compilebuf = {NULL}, parsebuf = {NULL};
-	struct nbufc_compile_opt copt = {
-		.outbuf = &compilebuf,
-	};
+	struct nbuf_buf textbuf = {NULL}, parsebuf = {NULL};
 	struct nbuf_parse_opt paopt = {
 		.outbuf = &parsebuf,
 		.filename = "<test input>",
@@ -154,16 +133,10 @@ void test_parse_print(void)
 		.indent = -1,
 		.msg_type_hdr = true,
 	};
-	nbuf_Schema schema;
 	nbuf_MsgDef mdef;
 	struct nbuf_obj o;
 
-	nbuf_save_file(&textbuf, schema_file);
-
-	TEST_CASE("compile");
-	ss = nbufc_compile(&copt, schema_file);
-	TEST_ASSERT_(ss != NULL, "compiling %s returns a valid schema set", schema_file);
-	TEST_ASSERT(nbuf_get_Schema(&schema, &ss->buf, 0));
+	fprintf(stderr, "%p\n", NBUF_OBJ(schema)->buf);
 	TEST_ASSERT(nbuf_Schema_messages(&mdef, schema, 0));
 
 	TEST_CASE("parse");
@@ -177,8 +150,7 @@ void test_parse_print(void)
 	check_str_leq(textbuf.base, textbuf.len, test_output, sizeof test_output - 1);
 
 	fclose(f);
-	nbuf_clear(&parsebuf);
-	nbufc_free_compiled(&copt);
+	nbuf_unload_file(&textbuf);
 }
 
 static void bad_parse_case(struct nbuf_buf *parsebuf, nbuf_MsgDef mdef, const char *case_name, const char *input)
@@ -195,22 +167,9 @@ static void bad_parse_case(struct nbuf_buf *parsebuf, nbuf_MsgDef mdef, const ch
 
 void test_bad_parse(void)
 {
-	static struct nbuf_buf textbuf = {
-		.base = (char *) textschema,
-		.len = sizeof textschema - 1,
-	};
-	struct nbuf_schema_set *ss;
-	struct nbuf_buf compilebuf = {NULL}, parsebuf = {NULL};
-	struct nbufc_compile_opt copt = {
-		.outbuf = &compilebuf,
-	};
-	nbuf_Schema schema;
+	struct nbuf_buf parsebuf = {NULL};
 	nbuf_MsgDef mdef;
 
-	nbuf_save_file(&textbuf, schema_file);
-	ss = nbufc_compile(&copt, schema_file);
-	TEST_ASSERT_(ss != NULL, "compiling %s returns a valid schema set", schema_file);
-	TEST_ASSERT(nbuf_get_Schema(&schema, &ss->buf, 0));
 	TEST_ASSERT(nbuf_Schema_messages(&mdef, schema, 0));
 
 	bad_parse_case(&parsebuf, mdef, "bad enum", "a: true");
@@ -228,33 +187,19 @@ void test_bad_parse(void)
 	bad_parse_case(&parsebuf, mdef, "scattered repeated field", "d: 0 c: 1 d: 2");
 
 	nbuf_clear(&parsebuf);
-	nbufc_free_compiled(&copt);
 }
 
 void test_depth_limit(void)
 {
-	static struct nbuf_buf textbuf = {
-		.base = (char *) textschema,
-		.len = sizeof textschema - 1,
-	};
-	struct nbuf_schema_set *ss;
-	struct nbuf_buf compilebuf = {NULL}, parsebuf = {NULL};
-	struct nbufc_compile_opt copt = {
-		.outbuf = &compilebuf,
-	};
+	struct nbuf_buf parsebuf = {NULL};
 	struct nbuf_parse_opt paopt = {
 		.outbuf = &parsebuf,
 		.filename = "<test input>",
 		.max_depth = 1,
 	};
-	nbuf_Schema schema;
 	nbuf_MsgDef mdef, mdef1;
 	struct nbuf_obj o;
 
-	nbuf_save_file(&textbuf, schema_file);
-	ss = nbufc_compile(&copt, schema_file);
-	TEST_ASSERT_(ss != NULL, "compiling %s returns a valid schema set", schema_file);
-	TEST_ASSERT(nbuf_get_Schema(&schema, &ss->buf, 0));
 	TEST_ASSERT(nbuf_Schema_messages(&mdef, schema, 0));
 	TEST_ASSERT(nbuf_Schema_messages(&mdef1, schema, 1));
 
@@ -264,12 +209,9 @@ void test_depth_limit(void)
 	paopt.max_depth = 4;
 	TEST_CHECK(nbuf_parse(&paopt, &o, test_input, sizeof test_input - 1, mdef));
 	nbuf_clear(&parsebuf);
-
-	nbufc_free_compiled(&copt);
 }
 
 TEST_LIST = {
-	{"codegen", test_codegen},
 	{"parse_print", test_parse_print},
 	{"bad_parse", test_bad_parse},
 	{"depth_limit", test_depth_limit},
