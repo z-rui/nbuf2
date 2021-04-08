@@ -31,29 +31,33 @@ FILE *nbufc_search_open(struct nbuf_buf *buf, const char *const dirs[], const ch
 {
 	size_t filename_len = strlen(filename);
 	const char *dir;
-	size_t dir_len;
-	char *p;
+	size_t last_dir_len = 0;
 	FILE *f;
 
 	buf->len = 0;
-	if ((p = nbuf_alloc(buf, filename_len + 1)) == NULL)
+	if (!nbuf_alloc(buf, filename_len + 1))
 		return NULL;
-	memcpy(p, filename, filename_len + 1);
+	memcpy(buf->base, filename, filename_len + 1);
 	if ((f = fopen(buf->base, "r")) != NULL)
 		return f;
 	if (filename[0] == '/' || !dirs)
 		return NULL;
 	while ((dir = *dirs++) != NULL) {
-		buf->len = 0;
-		dir_len = strlen(dir);
-		if ((p = nbuf_alloc(buf, dir_len + filename_len + 2)) == NULL)
+		size_t dir_len = strlen(dir);
+		size_t newlen;
+
+		if (dir_len && dir[dir_len-1] == '/')
+			--dir_len;
+		newlen = dir_len + filename_len + 2;
+		if (newlen > buf->len && !nbuf_alloc(buf, newlen - buf->len))
 			return NULL;
-		memcpy(p, dir, dir_len); p += dir_len;
-		if (dir_len && p[-1] != '/')
-			*p++ = '/';
-		memcpy(p, filename, filename_len + 1);
+		buf->len = newlen;
+		memmove(buf->base + dir_len + 1, buf->base + last_dir_len, filename_len + 1);
+		memcpy(buf->base, dir, dir_len);
+		buf->base[dir_len] = '/';
 		if ((f = fopen(buf->base, "r")) != NULL)
 			return f;
+		last_dir_len = dir_len + 1;  /* including trailing '/' */
 	}
 	return NULL;
 }
