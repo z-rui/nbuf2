@@ -22,8 +22,6 @@ typedef enum {
 	Token_UNK,
 } Token;
 
-extern const char *const nbuf_token_names[];
-
 Token nbuf_lex(lexState *l);
 void nbuf_lexinit(lexState *l, const char *in_filename, const char *input, size_t input_len);
 void

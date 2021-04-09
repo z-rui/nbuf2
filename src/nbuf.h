@@ -177,12 +177,6 @@ static inline void nbuf_init_rw(struct nbuf_buf *buf, char *base, size_t cap)
 	buf->realloc = NULL;
 }
 
-/* Initializes a growable buffer.
- *
- * Return pre-allocated bytes.
- */
-size_t nbuf_init_ex(struct nbuf_buf *buf, size_t cap);
-
 /* Clears a read-write buffer.
  * This frees the memory owned by the buffer.
  */

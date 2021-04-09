@@ -12,6 +12,13 @@
 extern "C" {
 #endif
 
+/* Initializes a growable buffer.
+ *
+ * Return pre-allocated bytes.
+ */
+size_t nbuf_init_ex(struct nbuf_buf *buf, size_t cap);
+
+
 /* Convenience functions for loading/saving files.
  *
  * nbuf_load_file may use mmap() to load the file content, so it has

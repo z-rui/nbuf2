@@ -40,11 +40,12 @@ static void print_trace(Potato potato)
 }
 
 int main() {
+	static char mem[4096];
 	struct nbuf_buf buf[1];
 	Potato potato;
 
 	srand(time(NULL));
-	nbuf_init_ex(buf, 4096);
+	nbuf_init_rw(buf, mem, sizeof mem);
 	alloc_Potato(&potato, buf);
 	Potato_set_ttl(potato, rand() % MAX_TTL);
 
