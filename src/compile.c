@@ -737,7 +737,7 @@ parse_file(struct ctx *ctx, const char *filename)
 	nbuf_load_fp(&textschema, f);
 	fclose(f);
 	ss = parse_opened_file(ctx, &textschema, filename);
-	nbuf_unload_file(&textschema);
+	nbuf_clear(&textschema);
 err:
 	--ctx->depth;
 	return ss;

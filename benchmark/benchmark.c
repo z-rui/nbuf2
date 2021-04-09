@@ -114,7 +114,7 @@ int main()
 		nbuf_clear(&buf);
 		nbuf_load_file(&buf1, "benchmark.nb.txt");
 		BENCH(parse_text_format(&buf1, &buf), 2000);
-		nbuf_unload_file(&buf1);
+		nbuf_clear(&buf1);
 	}
 	// get_Root(&root, &buf, 0);
 	// print_text_format(stdout, root);

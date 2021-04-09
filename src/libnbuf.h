@@ -21,13 +21,11 @@ size_t nbuf_init_ex(struct nbuf_buf *buf, size_t cap);
 
 /* Convenience functions for loading/saving files.
  *
- * nbuf_load_file may use mmap() to load the file content, so it has
- * to be released by nbuf_unload_file().
+ * nbuf_load_file may use mmap() to load the file content.
  */
 size_t nbuf_load_fp(struct nbuf_buf *buf, FILE *f);
 size_t nbuf_load_fd(struct nbuf_buf *buf, int fd);
 size_t nbuf_load_file(struct nbuf_buf *buf, const char *filename);
-void nbuf_unload_file(struct nbuf_buf *buf);
 
 size_t nbuf_save_fp(struct nbuf_buf *buf, FILE *f);
 size_t nbuf_save_fd(struct nbuf_buf *buf, int fd);

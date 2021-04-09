@@ -170,7 +170,7 @@ void test_parse_print(void)
 	TEST_ASSERT(nbuf_load_fp(&textbuf, f));
 	fclose(f);
 	check_str_leq(textbuf.base, textbuf.len, test_output, sizeof test_output - 1);
-	nbuf_unload_file(&textbuf);
+	nbuf_clear(&textbuf);
 }
 
 static void bad_parse_case(struct nbuf_buf *parsebuf, nbuf_MsgDef mdef, const char *case_name, const char *input)

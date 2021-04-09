@@ -65,7 +65,7 @@ static void read_msg()
 			int(entry.severity()) << "): " <<
 			entry.message();
 	}
-	nbuf_unload_file(&buf);
+	nbuf_clear(&buf);
 }
 
 }  // namespace

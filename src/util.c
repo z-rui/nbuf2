@@ -50,6 +50,23 @@ err:
 }
 #endif
 
+#if HAVE_MMAP || defined _WIN32
+static char *realloc_mapped(struct nbuf_buf *buf, size_t newlen)
+{
+	if (newlen != 0)
+		return NULL;  /* not supported */
+	assert(buf->base != NULL && buf->cap == 0);
+#ifdef _WIN32
+	if (!UnmapViewOfFile(buf->base))
+		perror("UnmapViewOfFile: cannot unmap");
+#elif HAVE_MMAP
+	if (munmap(buf->base, buf->len) == -1)
+		perror("munmap: cannot unmap");
+#endif
+	return NULL;
+}
+#endif
+
 #if HAVE_UNISTD_H || defined _WIN32
 size_t nbuf_load_fd(struct nbuf_buf *buf, int fd)
 {
@@ -68,14 +85,15 @@ size_t nbuf_load_fd(struct nbuf_buf *buf, int fd)
 #endif
 
 	buf->base = NULL;
-	buf->len = statbuf.st_size;
+	buf->len = 0;
 	buf->cap = 0;
-#ifndef __SANITIZE_ADDRESS__
+	buf->realloc = NULL;
+#if !defined __SANITIZE_ADDRESS__ && (HAVE_MMAP || defined _WIN32)
 	/* Will not ues mmap if using sanitizers,
 	 * so memory leak will be detected.
 	 */
+	if (statbuf.st_size && S_ISREG(statbuf.st_mode)) {
 #ifdef _WIN32
-	if (buf->len && S_ISREG(statbuf.st_mode)) {
 		HANDLE hFile, hFileMapping;
 		hFile = (HANDLE) _get_osfhandle(fd);
 		if (hFile == INVALID_HANDLE_VALUE)
@@ -85,24 +103,21 @@ size_t nbuf_load_fd(struct nbuf_buf *buf, int fd)
 			goto bad_handle;
 		buf->base = MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);
 		CloseHandle(hFileMapping);
-		if (buf->base == NULL) {
-bad_handle:
-			buf->base = NULL;
-			buf->len = 0;
-		}
-		return buf->len;
-	}
+		if (buf->base == NULL)
+			goto bad_handle;
 #elif HAVE_MMAP
-	if (buf->len && S_ISREG(statbuf.st_mode)) {
 		buf->base = mmap(NULL, buf->len, PROT_READ, MAP_SHARED, fd, 0);
 		if (buf->base == MAP_FAILED) {
-			buf->base = NULL;
-			buf->len = 0;
 			perror("mmap");
+			buf->base = NULL;
+			goto bad_handle;
 		}
+#endif
+		buf->len = statbuf.st_size;
+		buf->realloc = realloc_mapped;
+bad_handle:
 		return buf->len;
 	}
-#endif
 #endif  /* __SANITIZE_ADDRESS__ */
 	return nbuf_load_fd_read(buf, fd);
 }
@@ -146,26 +161,6 @@ size_t nbuf_load_file(struct nbuf_buf *buf, const char *filename)
 	rc = nbuf_load_fp(buf, f);
 	fclose(f);
 	return rc;
-}
-
-void nbuf_unload_file(struct nbuf_buf *buf)
-{
-#ifdef _WIN32
-	if (buf->base != NULL && buf->cap == 0) {
-		/* Mapped File */
-		if (!UnmapViewOfFile(buf->base))
-			perror("nbuf_unload_file: cannot unmap");
-	} else
-#elif HAVE_MMAP
-	if (buf->base != NULL && buf->cap == 0) {
-		/* mmap-ed region */
-		if (munmap(buf->base, buf->len) == -1)
-			perror("nbuf_unload_file: cannot unmap");
-	} else
-#endif
-	free(buf->base);
-	buf->base = NULL;
-	buf->len = buf->cap = 0;
 }
 
 #if HAVE_UNISTD_H || defined _WIN32

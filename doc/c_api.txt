@@ -8,10 +8,13 @@
 
 This structure represents a buffer.  It can be initialized by 
 
-    void nbuf_init_ro(char *base, size_t size);  // static buffer
-    size_t nbuf_init_rw(size_t size);  // dynamic buffer
+    void nbuf_init_ro(char *base, size_t size);  // read buffer
+    void nbuf_init_rw(char *base, size_t cap);  // write buffer
+    size_t nbuf_init_ex(size_t init_cap);  // dynamic buffer
 
-The dynamic buffer can grow dynamically as needed.  To use it, link with
+A read buffer already has contents in it.  A write buffer starts empty,
+but the memory is pre-allocated and cannot be expanded.
+A dynamic buffer can grow dynamically as needed.  To use it, link with
 libnbuf.  The dynamic buffer owns memory which needs to be freed by
 nbuf_clear().
 
@@ -27,7 +30,7 @@ libnbuf provides convenience functions to load/save buffer from/to files.
 
 The buffer loaded from file is mean to be read only.  Thus, do not use set_*
 functions to alter the content.  The implmentation may memory-map the file, so
-its should only be used for regular files.  It has to be freed by nbuf_unload_file().
+its should only be used for regular files.  It should be freed by nbuf_clear().
 
 The user can simply use the buffer as an dynamic array.  To add content:
 

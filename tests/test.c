@@ -90,7 +90,7 @@ static void read_msg(void)
 		printf("%d.%d (%s): %s", sec, nsec, logging_LogSeverity_to_string(severity), msg);
 		nbuf_next(NBUF_OBJ(entry));
 	}
-	nbuf_unload_file(&buf);
+	nbuf_clear(&buf);
 }
 
 int main()

@@ -132,10 +132,10 @@ decode(struct ctx *ctx, const char *msg_type)
 	}
 	if (!nbuf_print(&opt, &o, mdef))
 		goto err;
-	nbuf_unload_file(&buf);
+	nbuf_clear(&buf);
 	return 0;
 err:
-	nbuf_unload_file(&buf);
+	nbuf_clear(&buf);
 	fprintf(stderr, "decode failed\n");
 	return 1;
 }
@@ -181,7 +181,7 @@ encode(struct ctx *ctx, const char *msg_type)
 		rc = 0;
 err:
 	nbuf_clear(&outbuf);
-	nbuf_unload_file(&buf);
+	nbuf_clear(&buf);
 	if (rc)
 		fprintf(stderr, "encode failed\n");
 	return rc;
